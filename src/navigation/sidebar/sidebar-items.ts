@@ -1,4 +1,5 @@
 import {
+  ArrowRightLeft,
   Banknote,
   Calendar,
   ChartBar,
@@ -148,6 +149,13 @@ export const sidebarItems: NavGroup[] = [
     id: 2,
     label: "Pages",
     items: [
+      {
+        id: "banking-transfer",
+        title: "Funds Transfer",
+        url: "/banking/transfer",
+        icon: ArrowRightLeft,
+        badge: "new",
+      },
       {
         id: "products",
         title: "Products",
