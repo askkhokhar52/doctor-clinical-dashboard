@@ -117,7 +117,10 @@ export default function LoginPage() {
 
               {/* Identifier */}
               <div className="space-y-1.5">
-                <label htmlFor="login-identifier" className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                <label
+                  htmlFor="login-identifier"
+                  className="text-xs font-medium text-foreground flex items-center gap-1.5"
+                >
                   <Mail className="size-3.5 text-muted-foreground" />
                   Email or Account Number
                 </label>
@@ -134,7 +137,10 @@ export default function LoginPage() {
               {/* Password */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label htmlFor="login-password" className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                  <label
+                    htmlFor="login-password"
+                    className="text-xs font-medium text-foreground flex items-center gap-1.5"
+                  >
                     <Lock className="size-3.5 text-muted-foreground" />
                     Account Password
                   </label>

@@ -207,7 +207,10 @@ export default function RegisterPage() {
                 {/* Email Address */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <label htmlFor="reg-email" className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                    <label
+                      htmlFor="reg-email"
+                      className="text-xs font-medium text-foreground flex items-center gap-1.5"
+                    >
                       <Mail className="size-3.5 text-muted-foreground" />
                       Email Address
                     </label>
@@ -233,7 +236,10 @@ export default function RegisterPage() {
                 {/* Password with Strength Indicators */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <label htmlFor="reg-password" className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                    <label
+                      htmlFor="reg-password"
+                      className="text-xs font-medium text-foreground flex items-center gap-1.5"
+                    >
                       <Lock className="size-3.5 text-muted-foreground" />
                       Create Secure Password
                     </label>
@@ -334,7 +340,10 @@ export default function RegisterPage() {
                 {/* Opening Deposit */}
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between">
-                    <label htmlFor="reg-deposit" className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                    <label
+                      htmlFor="reg-deposit"
+                      className="text-xs font-medium text-foreground flex items-center gap-1.5"
+                    >
                       <DollarSign className="size-3.5 text-muted-foreground" />
                       Opening Deposit Amount ($)
                     </label>
