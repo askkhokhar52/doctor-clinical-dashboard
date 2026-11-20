@@ -3,6 +3,7 @@ import {
   Calendar,
   CheckSquare,
   Fingerprint,
+  GraduationCap,
   Kanban,
   Lock,
   type LucideIcon,
@@ -11,7 +12,6 @@ import {
   Package,
   ReceiptText,
   SquareArrowUpRight,
-  Stethoscope,
   UserRound,
   Users,
 } from "lucide-react";
@@ -60,10 +60,10 @@ export const sidebarItems: NavGroup[] = [
     label: "Dashboards",
     items: [
       {
-        id: "doctor",
-        title: "Doctor Dashboard",
-        url: "/dashboard/doctor",
-        icon: Stethoscope,
+        id: "university",
+        title: "University Dashboard",
+        url: "/dashboard/university",
+        icon: GraduationCap,
       },
     ],
   },
