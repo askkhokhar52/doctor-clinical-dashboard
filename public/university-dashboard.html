@@ -1,1134 +1,2003 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>University Student Analytics Dashboard</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<style>
-/* =========================================================
-   TOKENS & RESET
-   ========================================================= */
-:root{
-  --bg:#f1f5f9;--surface:#fff;--surface2:#f8fafc;--border:#e2e8f0;
-  --text:#0f172a;--muted:#64748b;--accent:#6366f1;--accent2:#06b6d4;
-  --green:#10b981;--red:#ef4444;--amber:#f59e0b;--purple:#a855f7;
-  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
-  --radius:12px;--card-pad:1.25rem;
-}
-[data-theme="dark"]{
-  --bg:#0f172a;--surface:#1e293b;--surface2:#0f172a;--border:#334155;
-  --text:#f1f5f9;--muted:#94a3b8;
-  --shadow:0 1px 3px rgba(0,0,0,.4);
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .25s,color .25s}
-a{color:var(--accent)}
-/* =========================================================
-   LAYOUT
-   ========================================================= */
-.topbar{position:sticky;top:0;z-index:100;background:var(--surface);border-bottom:1px solid var(--border);padding:.75rem 1.5rem;display:flex;align-items:center;gap:1rem;box-shadow:var(--shadow)}
-.topbar-title{font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:.5rem}
-.topbar-title span{font-size:1.4rem}
-.topbar-right{margin-left:auto;display:flex;align-items:center;gap:.75rem}
-.theme-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:.35rem .6rem;cursor:pointer;font-size:1rem;color:var(--text)}
-.conn-badge{font-size:.7rem;padding:.25rem .6rem;border-radius:20px;font-weight:600}
-.conn-badge.ok{background:#dcfce7;color:#15803d}
-.conn-badge.err{background:#fee2e2;color:#b91c1c}
-.conn-badge.loading{background:#fef3c7;color:#92400e}
-.main{padding:1.5rem;max-width:1600px;margin:0 auto}
-/* =========================================================
-   FILTERS BAR
-   ========================================================= */
-.filters{display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:1.5rem;padding:1rem;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border)}
-.filter-group{display:flex;flex-direction:column;gap:.3rem}
-.filter-group label{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
-.filter-group select,.filter-group input{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.4rem .7rem;font-size:.82rem;color:var(--text);min-width:130px;cursor:pointer}
-.btn{display:inline-flex;align-items:center;gap:.35rem;padding:.45rem 1rem;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;border:none;transition:opacity .15s}
-.btn-primary{background:var(--accent);color:#fff}
-.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
-.btn:hover{opacity:.85}
-/* =========================================================
-   KEY INSIGHTS BOX
-   ========================================================= */
-.insights-box{background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);color:#fff;border-radius:var(--radius);padding:1.1rem 1.4rem;margin-bottom:1.5rem}
-.insights-box h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;opacity:.8;margin-bottom:.6rem}
-.insights-list{display:flex;flex-wrap:wrap;gap:.5rem}
-.insight-pill{background:rgba(255,255,255,.18);border-radius:20px;padding:.3rem .8rem;font-size:.78rem;backdrop-filter:blur(4px)}
-/* =========================================================
-   SECTION
-   ========================================================= */
-.section{margin-bottom:2rem}
-.section-heading{font-size:1rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;padding-bottom:.5rem;border-bottom:2px solid var(--accent)}
-.section-heading span{font-size:1.1rem}
-/* =========================================================
-   GRIDS
-   ========================================================= */
-.grid-6{display:grid;grid-template-columns:repeat(6,1fr);gap:1rem}
-.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
-.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}
-.grid-12{display:grid;grid-template-columns:repeat(12,1fr);gap:1rem}
-@media(max-width:1200px){.grid-6{grid-template-columns:repeat(3,1fr)}.grid-4{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:768px){.grid-6,.grid-4,.grid-3,.grid-2{grid-template-columns:1fr}.col-span-7,.col-span-5,.col-span-8,.col-span-4{grid-column:span 12!important}}
-.col-span-7{grid-column:span 7}
-.col-span-5{grid-column:span 5}
-.col-span-8{grid-column:span 8}
-.col-span-4{grid-column:span 4}
-.col-span-6{grid-column:span 6}
-.col-span-12{grid-column:span 12}
-/* =========================================================
-   CARDS
-   ========================================================= */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:var(--card-pad);box-shadow:var(--shadow)}
-.kpi-card{display:flex;flex-direction:column;gap:.6rem}
-.kpi-label{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-.kpi-val{font-size:2rem;font-weight:800;line-height:1}
-.kpi-sub{font-size:.75rem;color:var(--muted);display:flex;align-items:center;gap:.35rem;margin-top:.1rem}
-.kpi-icon{width:2.4rem;height:2.4rem;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin-bottom:.3rem}
-.badge{display:inline-flex;align-items:center;gap:.25rem;padding:.15rem .5rem;border-radius:20px;font-size:.7rem;font-weight:600}
-.badge-green{background:#dcfce7;color:#15803d}
-.badge-red{background:#fee2e2;color:#b91c1c}
-.badge-amber{background:#fef3c7;color:#92400e}
-.badge-blue{background:#dbeafe;color:#1d4ed8}
-.badge-purple{background:#f3e8ff;color:#7e22ce}
-.trend-up{color:var(--green);font-size:.72rem;font-weight:700}
-.trend-dn{color:var(--red);font-size:.72rem;font-weight:700}
-/* =========================================================
-   CHART CONTAINERS
-   ========================================================= */
-.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:var(--card-pad);box-shadow:var(--shadow)}
-.chart-title{font-size:.85rem;font-weight:700;margin-bottom:1rem;color:var(--text)}
-.chart-wrap{position:relative;width:100%}
-.chart-wrap canvas{max-height:300px!important}
-.chart-wrap-sm canvas{max-height:200px!important}
-.chart-wrap-lg canvas{max-height:380px!important}
-/* =========================================================
-   TABLES
-   ========================================================= */
-.table-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border)}
-table{width:100%;border-collapse:collapse;font-size:.8rem}
-thead{background:var(--surface2)}
-th{padding:.6rem .8rem;text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);cursor:pointer;white-space:nowrap;user-select:none}
-th:hover{color:var(--accent)}
-td{padding:.55rem .8rem;border-top:1px solid var(--border);vertical-align:middle}
-tr:hover td{background:var(--surface2)}
-.search-row{display:flex;gap:.6rem;margin-bottom:.6rem;align-items:center}
-.search-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.4rem .8rem;font-size:.82rem;color:var(--text)}
-/* =========================================================
-   PROGRESS BARS
-   ========================================================= */
-.prog{background:var(--border);border-radius:4px;height:6px;overflow:hidden}
-.prog-fill{height:100%;border-radius:4px;transition:width .6s}
-/* =========================================================
-   DEMAND FLAGS
-   ========================================================= */
-.flag-high{color:#15803d;font-weight:700;font-size:.7rem}
-.flag-low{color:#b91c1c;font-weight:700;font-size:.7rem}
-.flag-normal{color:var(--muted);font-size:.7rem}
-/* =========================================================
-   LOADING SPINNER
-   ========================================================= */
-.loading-overlay{display:flex;align-items:center;justify-content:center;padding:3rem;color:var(--muted);font-size:.85rem;gap:.5rem}
-.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-/* =========================================================
-   FUNNEL
-   ========================================================= */
-.funnel{display:flex;flex-direction:column;gap:.6rem}
-.funnel-step{display:flex;align-items:center;gap:.8rem}
-.funnel-bar-wrap{flex:1}
-.funnel-label{width:100px;font-size:.75rem;text-align:right;color:var(--muted);white-space:nowrap}
-.funnel-val{width:60px;text-align:right;font-size:.8rem;font-weight:700}
-/* =========================================================
-   STAT ROWS
-   ========================================================= */
-.stat-row{display:flex;justify-content:space-between;align-items:center;padding:.45rem 0;border-bottom:1px solid var(--border)}
-.stat-row:last-child{border:none}
-.stat-label{font-size:.8rem;color:var(--text)}
-.stat-val{font-size:.8rem;font-weight:700;color:var(--accent)}
-/* =========================================================
-   MARKET GAP
-   ========================================================= */
-.gap-item{display:flex;align-items:center;gap:.7rem;padding:.4rem 0;border-bottom:1px solid var(--border)}
-.gap-item:last-child{border:none}
-.gap-score{min-width:36px;text-align:center;font-size:.75rem;font-weight:800;padding:.15rem .4rem;border-radius:6px;background:var(--accent);color:#fff}
-</style>
-</head>
-<body>
-
-<!-- ============================================================
-  TOP BAR
-  ============================================================ -->
-<div class="topbar">
-  <div class="topbar-title"><span>🎓</span> University Analytics Dashboard</div>
-  <span id="conn-badge" class="conn-badge loading">⏳ Connecting…</span>
-  <div class="topbar-right">
-    <button class="theme-btn" id="themeBtn" title="Toggle dark mode">🌙</button>
-    <button class="btn btn-outline" onclick="exportAllCSV()">⬇ Export CSV</button>
-  </div>
-</div>
-
-<!-- ============================================================
-  FILTERS
-  ============================================================ -->
-<div class="main">
-<div class="filters" id="filtersBar">
-  <div class="filter-group">
-    <label>Year</label>
-    <select id="f-year" onchange="applyFilters()"><option value="">All Years</option></select>
-  </div>
-  <div class="filter-group">
-    <label>Department</label>
-    <select id="f-dept" onchange="applyFilters()"><option value="">All Departments</option></select>
-  </div>
-  <div class="filter-group">
-    <label>Program</label>
-    <select id="f-prog" onchange="applyFilters()"><option value="">All Programs</option></select>
-  </div>
-  <div class="filter-group">
-    <label>Degree Level</label>
-    <select id="f-level" onchange="applyFilters()">
-      <option value="">All Levels</option>
-      <option>BS</option><option>MS</option><option>PhD</option>
-    </select>
-  </div>
-  <div class="filter-group">
-    <label>Gender</label>
-    <select id="f-gender" onchange="applyFilters()">
-      <option value="">All</option><option>Male</option><option>Female</option>
-    </select>
-  </div>
-  <div class="filter-group">
-    <label>Status</label>
-    <select id="f-status" onchange="applyFilters()">
-      <option value="">All</option>
-      <option>Active</option><option>Graduated</option><option>Dropped Out</option>
-      <option>Suspended</option><option>On Leave</option>
-    </select>
-  </div>
-  <div style="margin-left:auto;display:flex;align-items:flex-end">
-    <button class="btn btn-outline" onclick="resetFilters()">✖ Reset</button>
-  </div>
-</div>
-
-<!-- ============================================================
-  KEY INSIGHTS
-  ============================================================ -->
-<div class="insights-box" id="insightsBox">
-  <h3>🔍 Key Insights</h3>
-  <div class="insights-list" id="insightsList">
-    <span class="insight-pill">⏳ Loading live insights…</span>
-  </div>
-</div>
-
-<!-- ============================================================
-  1. KPI CARDS
-  ============================================================ -->
-<div class="section">
-  <div class="section-heading"><span>📊</span> Key Performance Indicators</div>
-  <div class="grid-6" id="kpiGrid">
-    <div class="card kpi-card"><div class="kpi-icon" style="background:#ede9fe">📚</div><div class="kpi-label">Total Students</div><div class="kpi-val" id="kpi-total">—</div><div class="kpi-sub"><span class="trend-up">↑ Live</span></div></div>
-    <div class="card kpi-card"><div class="kpi-icon" style="background:#d1fae5">✅</div><div class="kpi-label">Active Students</div><div class="kpi-val" id="kpi-active">—</div><div class="kpi-sub" id="kpi-active-pct">— % of total</div></div>
-    <div class="card kpi-card"><div class="kpi-icon" style="background:#fef3c7">🏛️</div><div class="kpi-label">Total Programs</div><div class="kpi-val" id="kpi-programs">—</div><div class="kpi-sub">Across all departments</div></div>
-    <div class="card kpi-card"><div class="kpi-icon" style="background:#fee2e2">🎓</div><div class="kpi-label">Graduation Rate</div><div class="kpi-val" id="kpi-grad">—</div><div class="kpi-sub">Overall rate</div></div>
-    <div class="card kpi-card"><div class="kpi-icon" style="background:#dbeafe">💼</div><div class="kpi-label">Alumni Employment</div><div class="kpi-val" id="kpi-emp">—</div><div class="kpi-sub">Post-graduation</div></div>
-    <div class="card kpi-card"><div class="kpi-icon" style="background:#f3e8ff">⏱️</div><div class="kpi-label">Avg. Time to Graduate</div><div class="kpi-val" id="kpi-yrs">—</div><div class="kpi-sub">Years average</div></div>
-  </div>
-</div>
-
-<!-- ============================================================
-  2. STUDENT STATUS SECTION
-  ============================================================ -->
-<div class="section">
-  <div class="section-heading"><span>🧑‍🎓</span> Student Status & Retention</div>
-  <div class="grid-12">
-    <div class="chart-card col-span-4">
-      <div class="chart-title">Student Status Breakdown (Donut)</div>
-      <div class="chart-wrap chart-wrap-sm"><canvas id="statusDonut"></canvas></div>
-    </div>
-    <div class="chart-card col-span-4">
-      <div class="chart-title">Active vs Non-Active Trend (5 Years)</div>
-      <div class="chart-wrap"><canvas id="statusTrend"></canvas></div>
-    </div>
-    <div class="chart-card col-span-4">
-      <div class="chart-title">Retention Rate by Year of Study</div>
-      <div class="chart-wrap"><canvas id="retentionChart"></canvas></div>
-    </div>
-  </div>
-</div>
-
-<!-- ============================================================
-  3. PROGRAMS TABLE
-  ============================================================ -->
-<div class="section">
-  <div class="section-heading"><span>📋</span> Programs Offered</div>
-  <div class="card">
-    <div class="search-row">
-      <input type="text" class="search-input" id="progSearch" placeholder="🔍 Search programs…" oninput="filterProgramTable()"/>
-      <select id="pf-dept" onchange="filterProgramTable()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.4rem .7rem;font-size:.82rem;color:var(--text)">
-        <option value="">All Departments</option>
-      </select>
-      <select id="pf-level" onchange="filterProgramTable()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.4rem .7rem;font-size:.82rem;color:var(--text)">
-        <option value="">All Levels</option><option>BS</option><option>MS</option><option>PhD</option>
-      </select>
-    </div>
-    <div class="table-wrap">
-      <table id="progTable">
-        <thead><tr>
-          <th onclick="sortTable('progTable',0)">Program ↕</th>
-          <th onclick="sortTable('progTable',1)">Department ↕</th>
-          <th onclick="sortTable('progTable',2)">Level ↕</th>
-          <th onclick="sortTable('progTable',3)">Duration ↕</th>
-          <th onclick="sortTable('progTable',4)">Seats ↕</th>
-          <th onclick="sortTable('progTable',5)">Enrolled ↕</th>
-          <th onclick="sortTable('progTable',6)">Avg Salary (K) ↕</th>
-          <th>Status</th>
-        </tr></thead>
-        <tbody id="progTableBody"><tr><td colspan="8" class="loading-overlay"><div class="spinner"></div> Loading…</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- ============================================================
-  4. HIGH-DEMAND PROGRAMS
-  ============================================================ -->
-<div class="section">
-  <div class="section-heading"><span>🔥</span> High-Demand Programs</div>
-  <div class="grid-12">
-    <div class="chart-card col-span-8">
-      <div class="chart-title">Applications vs Seats vs Admitted (Top Programs)</div>
-      <div class="chart-wrap chart-wrap-lg"><canvas id="demandChart"></canvas></div>
-    </div>
-    <div class="chart-card col-span-4">
-      <div class="chart-title">Demand Leaderboard</div>
-      <div id="demandLeaderboard" class="loading-overlay"><div class="spinner"></div> Loading…</div>
-    </div>
-  </div>
-</div>
-
-<!-- ============================================================
-  5. ALUMNI SECTION
-  ============================================================ -->
-<div class="section">
-  <div class="section-heading"><span>🎓</span> Alumni Intelligence</div>
-  <div class="grid-12">
-    <div class="chart-card col-span-4">
-      <div class="chart-title">Alumni by Industry</div>
-      <div class="chart-wrap"><canvas id="alumniIndustry"></canvas></div>
-    </div>
-    <div class="chart-card col-span-4">
-      <div class="chart-title">Employer Type Distribution</div>
-      <div class="chart-wrap chart-wrap-sm"><canvas id="employerType"></canvas></div>
-    </div>
-    <div class="chart-card col-span-4">
-      <div class="chart-title">Alumni Location (Local / Abroad / Higher Studies)</div>
-      <div class="chart-wrap chart-wrap-sm"><canvas id="alumniLocation"></canvas></div>
-    </div>
-  </div>
-  <div style="margin-top:1rem" class="grid-2">
-    <div class="chart-card">
-      <div class="chart-title">Top Employers by Alumni Count</div>
-      <div class="table-wrap" style="max-height:260px;overflow-y:auto">
-        <table id="employerTable">
-          <thead><tr>
-            <th onclick="sortTable('employerTable',0)">Employer ↕</th>
-            <th onclick="sortTable('employerTable',1)">Type ↕</th>
-            <th onclick="sortTable('employerTable',2)">Industry ↕</th>
-            <th onclick="sortTable('employerTable',3)">Alumni ↕</th>
-            <th>Reputable</th>
-          </tr></thead>
-          <tbody id="employerTableBody"><tr><td colspan="5" class="loading-overlay"><div class="spinner"></div></td></tr></tbody>
-        </table>
-      </div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">Alumni Placement & Salary by Program</div>
-      <div class="table-wrap" style="max-height:260px;overflow-y:auto">
-        <table id="alumniPlacementTable">
-          <thead><tr>
-            <th onclick="sortTable('alumniPlacementTable',0)">Program ↕</th>
-            <th onclick="sortTable('alumniPlacementTable',1)">Alumni ↕</th>
-            <th onclick="sortTable('alumniPlacementTable',2)">Placed % ↕</th>
-            <th onclick="sortTable('alumniPlacementTable',3)">Avg Salary (K) ↕</th>
-          </tr></thead>
-          <tbody id="alumniPlacementBody"><tr><td colspan="4" class="loading-overlay"><div class="spinner"></div></td></tr></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ============================================================
-  6. ADDITIONAL INSIGHTS
-  ============================================================ -->
-<div class="section">
-  <div class="section-heading"><span>🔬</span> Additional Insights</div>
-  <div class="grid-12">
-
-    <!-- Gender Overall -->
-    <div class="chart-card col-span-4">
-      <div class="chart-title">Gender Distribution</div>
-      <div class="chart-wrap chart-wrap-sm"><canvas id="genderDonut"></canvas></div>
-    </div>
-
-    <!-- Geography -->
-    <div class="chart-card col-span-4">
-      <div class="chart-title">Geographic Distribution (Province)</div>
-      <div class="chart-wrap"><canvas id="geoChart"></canvas></div>
-    </div>
-
-    <!-- Scholarship Split -->
-    <div class="chart-card col-span-4">
-      <div class="chart-title">Scholarship vs Self-Financed</div>
-      <div class="chart-wrap chart-wrap-sm"><canvas id="scholarshipDonut"></canvas></div>
-    </div>
-
-    <!-- CGPA by Program -->
-    <div class="chart-card col-span-6">
-      <div class="chart-title">Average CGPA by Program</div>
-      <div class="chart-wrap chart-wrap-lg"><canvas id="cgpaChart"></canvas></div>
-    </div>
-
-    <!-- Dropout Reasons -->
-    <div class="chart-card col-span-6">
-      <div class="chart-title">Dropout / Leave Reasons</div>
-      <div class="chart-wrap chart-wrap-lg"><canvas id="dropoutChart"></canvas></div>
-    </div>
-
-    <!-- Dept Summary -->
-    <div class="chart-card col-span-6">
-      <div class="chart-title">Faculty-to-Student Ratio by Department</div>
-      <div class="table-wrap" style="max-height:260px;overflow-y:auto">
-        <table id="deptTable">
-          <thead><tr>
-            <th>Department</th>
-            <th>Faculty</th>
-            <th>Students</th>
-            <th>Ratio</th>
-            <th>Satisfaction</th>
-            <th>Internship %</th>
-          </tr></thead>
-          <tbody id="deptTableBody"><tr><td colspan="6" class="loading-overlay"><div class="spinner"></div></td></tr></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Admission Funnel -->
-    <div class="chart-card col-span-6">
-      <div class="chart-title">Admission Funnel</div>
-      <div id="funnelContainer" class="loading-overlay"><div class="spinner"></div> Loading…</div>
-    </div>
-
-    <!-- At-Risk Students -->
-    <div class="chart-card col-span-6">
-      <div class="chart-title">⚠️ At-Risk Students (Early Warning)</div>
-      <div class="search-row"><input type="text" class="search-input" id="riskSearch" placeholder="🔍 Search student…" oninput="filterRiskTable()"/></div>
-      <div class="table-wrap" style="max-height:240px;overflow-y:auto">
-        <table id="riskTable">
-          <thead><tr>
-            <th>Student ID</th><th>Program</th><th>Intake</th>
-            <th>CGPA</th><th>Attendance %</th><th>Fees Unpaid</th><th>Warning Signs</th>
-          </tr></thead>
-          <tbody id="riskTableBody"><tr><td colspan="7" class="loading-overlay"><div class="spinner"></div></td></tr></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Gender by Program -->
-    <div class="chart-card col-span-6">
-      <div class="chart-title">Gender Distribution by Program</div>
-      <div class="chart-wrap chart-wrap-lg"><canvas id="genderByProg"></canvas></div>
-    </div>
-
-    <!-- YoY Growth -->
-    <div class="chart-card col-span-6">
-      <div class="chart-title">Year-over-Year Enrollment Growth by Program</div>
-      <div class="chart-wrap chart-wrap-lg"><canvas id="yoyChart"></canvas></div>
-    </div>
-
-    <!-- Market Gap -->
-    <div class="chart-card col-span-6">
-      <div class="chart-title">📉 Industry Demand vs Program Gap</div>
-      <div id="marketGapContainer" class="loading-overlay"><div class="spinner"></div> Loading…</div>
-    </div>
-
-    <!-- Satisfaction -->
-    <div class="chart-card col-span-6">
-      <div class="chart-title">Student Satisfaction Score by Department</div>
-      <div class="chart-wrap chart-wrap-lg"><canvas id="satisfactionChart"></canvas></div>
-    </div>
-
-  </div>
-</div>
-
-</div><!-- /main -->
-
-<script>
-/* ==============================================================
-   CONFIGURATION — Edit SUPABASE_URL and SUPABASE_KEY to swap data
-   ==============================================================
-   SUPABASE_URL  : Your Supabase project REST endpoint
-   SUPABASE_KEY  : Anon public key (safe for browser)
-   VIEWS USED    : v_kpis, v_status_summary, v_status_trend,
-                   v_retention_by_year, v_program_demand,
-                   v_alumni_placement, v_alumni_by_industry,
-                   v_alumni_employer_type, v_alumni_top_employers,
-                   v_alumni_location, v_gender_by_program,
-                   v_province_distribution, v_scholarship_split,
-                   v_cgpa_by_program, v_leave_reasons,
-                   v_dept_summary, v_admission_funnel,
-                   v_at_risk_students, v_admission_growth,
-                   market_gaps, programs, departments
-   ============================================================== */
-const SUPABASE_URL = "https://qbhfwfyrffmrconfvmiz.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFiaGZ3ZnlyZmZtcmNvbmZ2bWl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUxMjM0MTEsImV4cCI6MjExMDY5OTQxMX0.PwF1q2HkmckNtFen-COvuFmljxUMvo1muIAboICRkC8";
-
-// ---- Helpers ----------------------------------------------------------------
-const H = {
-  get(endpoint, params){
-    const url=new URL(SUPABASE_URL+"/rest/v1/"+endpoint);
-    if(params)Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
-    return fetch(url,{headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Accept":"application/json","Prefer":"count=none"}}).then(r=>{if(!r.ok)throw r;return r.json()});
-  },
-  fmt(n,decimals=0){
-    if(n==null||n===undefined)return"—";
-    const v=Number(n);
-    if(isNaN(v))return"—";
-    return v.toLocaleString(undefined,{maximumFractionDigits:decimals,minimumFractionDigits:decimals});
-  },
-  pct(n,d=1){return H.fmt(n,d)+"%"},
-};
-
-// ---- State ------------------------------------------------------------------
-let DB = {};           // raw fetched data
-let CHARTS = {};       // Chart.js instances
-let sortDirs = {};     // per-table sort state
-let programsMeta = []; // enriched programs list
-
-// ---- Theme toggle -----------------------------------------------------------
-const themeBtn=document.getElementById("themeBtn");
-themeBtn.addEventListener("click",()=>{
-  const html=document.documentElement;
-  const dark=html.getAttribute("data-theme")==="dark";
-  html.setAttribute("data-theme",dark?"light":"dark");
-  themeBtn.textContent=dark?"🌙":"☀️";
-  redrawCharts();
-});
-
-// ---- Colour palette ---------------------------------------------------------
-const PALETTE=["#6366f1","#06b6d4","#10b981","#f59e0b","#ef4444","#a855f7","#ec4899","#14b8a6","#8b5cf6","#f97316","#84cc16","#0ea5e9"];
-function pal(i){return PALETTE[i%PALETTE.length]}
-function chartDefaults(){
-  return {
-    color:getComputedStyle(document.documentElement).getPropertyValue("--text").trim()||"#0f172a",
-    gridColor:getComputedStyle(document.documentElement).getPropertyValue("--border").trim()||"#e2e8f0",
-  };
-}
-
-// ---- Badge helpers ----------------------------------------------------------
-function statusBadge(s){
-  if(s==="Active")return`<span class="badge badge-green">${s}</span>`;
-  if(s==="Graduated")return`<span class="badge badge-blue">${s}</span>`;
-  if(s==="Dropped Out")return`<span class="badge badge-red">${s}</span>`;
-  if(s==="Suspended")return`<span class="badge badge-amber">${s}</span>`;
-  return`<span class="badge badge-purple">${s||"—"}</span>`;
-}
-function boolIcon(b){return b?"<span style='color:#10b981'>✔</span>":"<span style='color:#ef4444'>✖</span>"}
-
-// ---- Make / destroy chart ---------------------------------------------------
-function mkChart(id,config){
-  if(CHARTS[id])CHARTS[id].destroy();
-  const ctx=document.getElementById(id);
-  if(!ctx)return;
-  CHARTS[id]=new Chart(ctx,config);
-}
-
-// =========================================================
-// FETCH ALL DATA
-// =========================================================
-async function fetchAll(){
-  document.getElementById("conn-badge").textContent="⏳ Loading…";
-  document.getElementById("conn-badge").className="conn-badge loading";
-  try{
-    const [
-      kpis, statusSummary, statusTrend, retention,
-      progDemand, alumniPlacement, alumniIndustry,
-      alumniEmployerType, alumniTopEmployers, alumniLocation,
-      genderByProg, province, scholarship, cgpa, leaveReasons,
-      deptSummary, admFunnel, atRisk, admGrowth, marketGaps,
-      programs, departments, programAdmissions
-    ] = await Promise.all([
-      H.get("v_kpis"),
-      H.get("v_status_summary"),
-      H.get("v_status_trend","order=year.asc"),
-      H.get("v_retention_by_year","order=year_of_study.asc"),
-      H.get("v_program_demand","order=demand_rank.asc"),
-      H.get("v_alumni_placement","order=alumni.desc"),
-      H.get("v_alumni_by_industry","order=alumni.desc"),
-      H.get("v_alumni_employer_type"),
-      H.get("v_alumni_top_employers","order=alumni.desc&limit=15"),
-      H.get("v_alumni_location"),
-      H.get("v_gender_by_program","order=program.asc"),
-      H.get("v_province_distribution","order=students.desc"),
-      H.get("v_scholarship_split"),
-      H.get("v_cgpa_by_program","order=avg_cgpa.desc"),
-      H.get("v_leave_reasons","order=students.desc"),
-      H.get("v_dept_summary","order=enrolled_students.desc"),
-      H.get("v_admission_funnel","order=total.desc"),
-      H.get("v_at_risk_students","order=cgpa.asc&limit=200"),
-      H.get("v_admission_growth","order=cycle_year.asc"),
-      H.get("market_gaps","order=demand_score.desc"),
-      H.get("programs","order=name.asc"),
-      H.get("departments","order=name.asc"),
-      H.get("program_admissions","order=cycle_year.asc"),
-    ]);
-
-    DB = {kpis,statusSummary,statusTrend,retention,progDemand,alumniPlacement,
-          alumniIndustry,alumniEmployerType,alumniTopEmployers,alumniLocation,
-          genderByProg,province,scholarship,cgpa,leaveReasons,deptSummary,
-          admFunnel,atRisk,admGrowth,marketGaps,programs,departments,programAdmissions};
-
-    document.getElementById("conn-badge").textContent="🟢 Supabase Live";
-    document.getElementById("conn-badge").className="conn-badge ok";
-
-    buildFilterOptions();
-    renderAll();
-  }catch(e){
-    console.error(e);
-    document.getElementById("conn-badge").textContent="🔴 Connection Error";
-    document.getElementById("conn-badge").className="conn-badge err";
-  }
-}
-
-// =========================================================
-// BUILD FILTER DROPDOWNS
-// =========================================================
-function buildFilterOptions(){
-  // Years from status trend
-  const years=(DB.statusTrend||[]).map(r=>r.year).filter(Boolean).sort();
-  const fyear=document.getElementById("f-year");
-  years.forEach(y=>{const o=new Option(y,y);fyear.add(o)});
-
-  // Departments
-  const depts=[...new Set((DB.departments||[]).map(r=>r.name).filter(Boolean))].sort();
-  const fdept=document.getElementById("f-dept");
-  const pfdept=document.getElementById("pf-dept");
-  depts.forEach(d=>{
-    fdept.add(new Option(d,d));
-    pfdept.add(new Option(d,d));
-  });
-
-  // Programs
-  const progs=[...new Set((DB.programs||[]).map(r=>r.name).filter(Boolean))].sort();
-  const fprog=document.getElementById("f-prog");
-  progs.forEach(p=>fprog.add(new Option(p,p)));
-}
-
-// =========================================================
-// RENDER ALL SECTIONS
-// =========================================================
-function renderAll(){
-  renderKPIs();
-  renderInsights();
-  renderStatusDonut();
-  renderStatusTrend();
-  renderRetention();
-  renderProgramTable();
-  renderDemandChart();
-  renderDemandLeaderboard();
-  renderAlumniIndustry();
-  renderEmployerType();
-  renderAlumniLocation();
-  renderEmployerTable();
-  renderAlumniPlacement();
-  renderGenderDonut();
-  renderGeoChart();
-  renderScholarship();
-  renderCGPA();
-  renderDropout();
-  renderDeptTable();
-  renderFunnel();
-  renderAtRisk();
-  renderGenderByProg();
-  renderYoY();
-  renderMarketGap();
-  renderSatisfaction();
-}
-
-// =========================================================
-// KPIs
-// =========================================================
-function renderKPIs(){
-  const k=(DB.kpis||[])[0]||{};
-  document.getElementById("kpi-total").textContent=H.fmt(k.total_students);
-  document.getElementById("kpi-active").textContent=H.fmt(k.active_students);
-  document.getElementById("kpi-active-pct").textContent=H.pct(k.active_pct,1)+" of total";
-  document.getElementById("kpi-programs").textContent=H.fmt(k.total_programs);
-  document.getElementById("kpi-grad").textContent=H.pct(k.graduation_rate_pct,1);
-  document.getElementById("kpi-emp").textContent=H.pct(k.alumni_employment_pct,1);
-  document.getElementById("kpi-yrs").textContent=H.fmt(k.avg_years_to_graduate,2)+" yrs";
-}
-
-// =========================================================
-// KEY INSIGHTS (auto-generated)
-// =========================================================
-function renderInsights(){
-  const k=(DB.kpis||[])[0]||{};
-  const topDemand=(DB.progDemand||[]).find(p=>p.demand_rank===1)||{};
-  const topAlumniProg=(DB.alumniPlacement||[])[0]||{};
-  const atRiskCount=(DB.atRisk||[]).length;
-  const topIndustry=(DB.alumniIndustry||[])[0]||{};
-  const insights=[
-    topDemand.program?`🔥 <b>${topDemand.program}</b> has the highest demand ratio at <b>${H.fmt(topDemand.demand_ratio,1)}x</b> (${H.fmt(topDemand.applications)} applications for ${H.fmt(topDemand.seats)} seats)`:null,
-    k.graduation_rate_pct?`🎓 Overall graduation rate is <b>${H.pct(k.graduation_rate_pct,1)}</b> with an average of <b>${H.fmt(k.avg_years_to_graduate,1)} years</b> to complete a degree`:null,
-    atRiskCount>0?`⚠️ <b>${H.fmt(atRiskCount)} students</b> are at risk (low CGPA, attendance, or unpaid fees) and need early intervention`:null,
-    topAlumniProg.program?`💼 Alumni from <b>${topAlumniProg.program}</b> report the highest average starting salary of <b>PKR ${H.fmt(topAlumniProg.avg_salary_k,0)}K/month</b>`:null,
-    topIndustry.industry?`📈 <b>${topIndustry.industry}</b> sector employs the most alumni (<b>${H.fmt(topIndustry.alumni)}</b> graduates)`:null,
-  ].filter(Boolean).slice(0,4);
-  document.getElementById("insightsList").innerHTML=insights.map(i=>`<span class="insight-pill">${i}</span>`).join("");
-}
-
-// =========================================================
-// STATUS DONUT
-// =========================================================
-function renderStatusDonut(){
-  const data=DB.statusSummary||[];
-  const labels=data.map(d=>d.status);
-  const vals=data.map(d=>d.students);
-  mkChart("statusDonut",{type:"doughnut",data:{labels,datasets:[{data:vals,backgroundColor:PALETTE.slice(0,labels.length),borderWidth:2,borderColor:"transparent"}]},options:{responsive:true,cutout:"65%",plugins:{legend:{position:"bottom",labels:{font:{size:11},boxWidth:12}}}}});
-}
-
-// =========================================================
-// STATUS TREND LINE
-// =========================================================
-function renderStatusTrend(){
-  const data=DB.statusTrend||[];
-  const {color,gridColor}=chartDefaults();
-  mkChart("statusTrend",{type:"line",data:{
-    labels:data.map(d=>d.year),
-    datasets:[
-      {label:"Active",data:data.map(d=>d.active_students),borderColor:"#10b981",backgroundColor:"rgba(16,185,129,.12)",tension:.4,fill:true,pointRadius:4},
-      {label:"Non-Active",data:data.map(d=>d.non_active_students),borderColor:"#ef4444",backgroundColor:"rgba(239,68,68,.1)",tension:.4,fill:true,pointRadius:4},
-    ]},options:{responsive:true,plugins:{legend:{position:"bottom",labels:{font:{size:11},boxWidth:12}}},scales:{x:{grid:{color:gridColor}},y:{grid:{color:gridColor}}}}
-  });
-}
-
-// =========================================================
-// RETENTION BAR
-// =========================================================
-function renderRetention(){
-  const data=DB.retention||[];
-  mkChart("retentionChart",{type:"bar",data:{
-    labels:data.map(d=>"Year "+d.year_of_study),
-    datasets:[{label:"Retention %",data:data.map(d=>Number(d.retention_pct)),backgroundColor:PALETTE.slice(0,data.length),borderRadius:6}]
-  },options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+"%"}}}}});
-}
-
-// =========================================================
-// PROGRAMS TABLE
-// =========================================================
-let _programsRaw=[];
-function renderProgramTable(){
-  // Join programs with dept names and enrollment from students
-  const deptMap=Object.fromEntries((DB.departments||[]).map(d=>[d.id,d.name]));
-  _programsRaw=(DB.programs||[]).map(p=>{
-    // count enrolled from students
-    const enrolled=(DB.programs||[]).length;// we'll use dept summary
-    return {...p,dept_name:deptMap[p.department_id]||"—",enrolled:p.enrolled||"—"};
-  });
-  filterProgramTable();
-}
-
-function filterProgramTable(){
-  const q=(document.getElementById("progSearch")||{}).value?.toLowerCase()||"";
-  const dept=(document.getElementById("pf-dept")||{}).value||"";
-  const level=(document.getElementById("pf-level")||{}).value||"";
-  const rows=_programsRaw.filter(p=>{
-    const deptName=(p.dept_name||"").toLowerCase();
-    const pName=(p.name||"").toLowerCase();
-    return(!q||(pName.includes(q)||deptName.includes(q)))&&
-           (!dept||p.dept_name===dept)&&
-           (!level||p.level===level);
-  });
-  document.getElementById("progTableBody").innerHTML=rows.map(p=>`
-    <tr>
-      <td><b>${p.name||"—"}</b></td>
-      <td>${p.dept_name}</td>
-      <td><span class="badge ${p.level==="BS"?"badge-blue":p.level==="MS"?"badge-purple":"badge-amber"}">${p.level||"—"}</span></td>
-      <td>${p.duration_years||"—"} yr</td>
-      <td>${H.fmt(p.seats)}</td>
-      <td>—</td>
-      <td>${p.avg_starting_salary_k?H.fmt(p.avg_starting_salary_k)+"K":"—"}</td>
-      <td>${p.is_open?'<span class="badge badge-green">Open</span>':'<span class="badge badge-red">Closed</span>'}</td>
-    </tr>`).join("")||`<tr><td colspan="8" style="padding:1rem;text-align:center;color:var(--muted)">No programs found</td></tr>`;
-}
-
-// =========================================================
-// DEMAND CHART
-// =========================================================
-function renderDemandChart(){
-  const data=(DB.progDemand||[]).slice(0,10);
-  const {gridColor}=chartDefaults();
-  mkChart("demandChart",{type:"bar",data:{
-    labels:data.map(d=>truncate(d.program,22)),
-    datasets:[
-      {label:"Applications",data:data.map(d=>d.applications),backgroundColor:"rgba(99,102,241,.8)",borderRadius:4},
-      {label:"Seats",data:data.map(d=>d.seats),backgroundColor:"rgba(6,182,212,.7)",borderRadius:4},
-      {label:"Admitted",data:data.map(d=>d.admitted),backgroundColor:"rgba(16,185,129,.7)",borderRadius:4},
-    ]},options:{responsive:true,indexAxis:"y",plugins:{legend:{position:"bottom",labels:{font:{size:11},boxWidth:12}},tooltip:{callbacks:{afterLabel:ctx=>{const d=data[ctx.dataIndex];return`Acceptance: ${H.pct(d.acceptance_rate_pct,1)} | Demand Ratio: ${H.fmt(d.demand_ratio,1)}x`}}}},scales:{x:{grid:{color:gridColor}},y:{grid:{display:false}}}}
-  });
-}
-
-// =========================================================
-// DEMAND LEADERBOARD
-// =========================================================
-function renderDemandLeaderboard(){
-  const data=(DB.progDemand||[]).slice(0,8);
-  if(!data.length){document.getElementById("demandLeaderboard").innerHTML="<p style='color:var(--muted);font-size:.8rem'>No data</p>";return}
-  document.getElementById("demandLeaderboard").innerHTML=data.map((d,i)=>`
-    <div class="stat-row">
-      <div>
-        <div style="font-size:.8rem;font-weight:600">${i+1}. ${d.program||"—"}</div>
-        <div style="font-size:.7rem;color:var(--muted)">${d.department||""} · ${d.level||""}</div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-size:.85rem;font-weight:800;color:var(--accent)">${H.fmt(d.demand_ratio,1)}x</div>
-        <div class="${d.flag==="High Demand"?"flag-high":d.flag==="Low Demand"||d.flag==="Under-enrolled"?"flag-low":"flag-normal"}">${d.flag||""}</div>
-      </div>
-    </div>`).join("");
-}
-
-// =========================================================
-// ALUMNI INDUSTRY (Polar Area)
-// =========================================================
-function renderAlumniIndustry(){
-  const data=(DB.alumniIndustry||[]).slice(0,10);
-  mkChart("alumniIndustry",{type:"polarArea",data:{
-    labels:data.map(d=>d.industry),
-    datasets:[{data:data.map(d=>d.alumni),backgroundColor:PALETTE.slice(0,data.length).map(c=>c+"cc")}]
-  },options:{responsive:true,plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:10}}}}});
-}
-
-// =========================================================
-// EMPLOYER TYPE (Doughnut)
-// =========================================================
-function renderEmployerType(){
-  const data=DB.alumniEmployerType||[];
-  mkChart("employerType",{type:"doughnut",data:{
-    labels:data.map(d=>d.type+(d.reputable?" ⭐":"")),
-    datasets:[{data:data.map(d=>d.alumni),backgroundColor:PALETTE.slice(0,data.length),borderWidth:2,borderColor:"transparent"}]
-  },options:{responsive:true,cutout:"60%",plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:10}}}}});
-}
-
-// =========================================================
-// ALUMNI LOCATION (Doughnut)
-// =========================================================
-function renderAlumniLocation(){
-  const data=DB.alumniLocation||[];
-  mkChart("alumniLocation",{type:"doughnut",data:{
-    labels:data.map(d=>d.category),
-    datasets:[{data:data.map(d=>d.alumni),backgroundColor:["#6366f1","#06b6d4","#10b981","#f59e0b"],borderWidth:2,borderColor:"transparent"}]
-  },options:{responsive:true,cutout:"60%",plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:10}}}}});
-}
-
-// =========================================================
-// EMPLOYER TABLE
-// =========================================================
-function renderEmployerTable(){
-  const data=DB.alumniTopEmployers||[];
-  document.getElementById("employerTableBody").innerHTML=data.map(e=>`
-    <tr>
-      <td><b>${e.employer||"—"}</b></td>
-      <td>${e.type||"—"}</td>
-      <td>${e.industry||"—"}</td>
-      <td><b>${H.fmt(e.alumni)}</b></td>
-      <td>${boolIcon(e.reputable)}</td>
-    </tr>`).join("")||`<tr><td colspan="5" style="padding:1rem;text-align:center;color:var(--muted)">No data</td></tr>`;
-}
-
-// =========================================================
-// ALUMNI PLACEMENT TABLE
-// =========================================================
-function renderAlumniPlacement(){
-  const data=DB.alumniPlacement||[];
-  document.getElementById("alumniPlacementBody").innerHTML=data.map(r=>`
-    <tr>
-      <td><b>${r.program||"—"}</b></td>
-      <td>${H.fmt(r.alumni)}</td>
-      <td>
-        <div style="display:flex;align-items:center;gap:.4rem">
-          <div class="prog" style="width:60px"><div class="prog-fill" style="width:${Math.min(100,r.placement_pct||0)}%;background:var(--green)"></div></div>
-          <span>${H.pct(r.placement_pct,1)}</span>
-        </div>
-      </td>
-      <td>
-        ${r.min_salary_k?H.fmt(r.min_salary_k)+"–"+H.fmt(r.max_salary_k)+"K <span style='color:var(--muted)'>(avg "+H.fmt(r.avg_salary_k,0)+"K)</span>":"—"}
-      </td>
-    </tr>`).join("")||`<tr><td colspan="4" style="padding:1rem;text-align:center;color:var(--muted)">No data</td></tr>`;
-}
-
-// =========================================================
-// GENDER DONUT
-// =========================================================
-function renderGenderDonut(){
-  const data=DB.genderByProg||[];
-  const female=data.reduce((s,r)=>s+(r.female||0),0);
-  const male=data.reduce((s,r)=>s+(r.male||0),0);
-  mkChart("genderDonut",{type:"doughnut",data:{
-    labels:["Female","Male"],
-    datasets:[{data:[female,male],backgroundColor:["#ec4899","#3b82f6"],borderWidth:2,borderColor:"transparent"}]
-  },options:{responsive:true,cutout:"65%",plugins:{legend:{position:"bottom",labels:{font:{size:11},boxWidth:12}}}}});
-}
-
-// =========================================================
-// GEO CHART (horizontal bar)
-// =========================================================
-function renderGeoChart(){
-  const data=(DB.province||[]).slice(0,10);
-  const {gridColor}=chartDefaults();
-  mkChart("geoChart",{type:"bar",data:{
-    labels:data.map(d=>d.province||"Unknown"),
-    datasets:[{label:"Students",data:data.map(d=>d.students),backgroundColor:PALETTE.slice(0,data.length).map(c=>c+"cc"),borderRadius:5}]
-  },options:{responsive:true,indexAxis:"y",plugins:{legend:{display:false}},scales:{x:{grid:{color:gridColor}},y:{grid:{display:false}}}}});
-}
-
-// =========================================================
-// SCHOLARSHIP DONUT
-// =========================================================
-function renderScholarship(){
-  const data=DB.scholarship||[];
-  mkChart("scholarshipDonut",{type:"doughnut",data:{
-    labels:data.map(d=>d.funding),
-    datasets:[{data:data.map(d=>d.students),backgroundColor:["#6366f1","#f59e0b"],borderWidth:2,borderColor:"transparent"}]
-  },options:{responsive:true,cutout:"65%",plugins:{legend:{position:"bottom",labels:{font:{size:11},boxWidth:12}}}}});
-}
-
-// =========================================================
-// CGPA BAR
-// =========================================================
-function renderCGPA(){
-  const data=(DB.cgpa||[]).slice(0,12);
-  const {gridColor}=chartDefaults();
-  mkChart("cgpaChart",{type:"bar",data:{
-    labels:data.map(d=>truncate(d.program,18)),
-    datasets:[
-      {label:"Avg CGPA",data:data.map(d=>Number(d.avg_cgpa)),backgroundColor:data.map(d=>Number(d.avg_cgpa)<2.5?"#ef4444cc":"#6366f1cc"),borderRadius:5},
-      {label:"At-Risk Students",data:data.map(d=>d.at_risk_students),backgroundColor:"#f59e0b66",borderRadius:5},
-    ]
-  },options:{responsive:true,plugins:{legend:{position:"bottom",labels:{font:{size:11},boxWidth:12}}},scales:{y:{grid:{color:gridColor}}}}});
-}
-
-// =========================================================
-// DROPOUT REASONS
-// =========================================================
-function renderDropout(){
-  const data=DB.leaveReasons||[];
-  mkChart("dropoutChart",{type:"bar",data:{
-    labels:data.map(d=>d.leave_reason||"Unknown"),
-    datasets:[{label:"Students",data:data.map(d=>d.students),backgroundColor:PALETTE.slice(0,data.length).map(c=>c+"cc"),borderRadius:5}]
-  },options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{maxRotation:30,font:{size:10}}}}}});
-}
-
-// =========================================================
-// DEPT TABLE
-// =========================================================
-function renderDeptTable(){
-  const data=DB.deptSummary||[];
-  document.getElementById("deptTableBody").innerHTML=data.map(d=>`
-    <tr>
-      <td><b>${d.department||"—"}</b></td>
-      <td>${H.fmt(d.faculty_count)}</td>
-      <td>${H.fmt(d.enrolled_students)}</td>
-      <td><b>${H.fmt(d.students_per_faculty,1)}</b></td>
-      <td>
-        <div style="display:flex;align-items:center;gap:.4rem">
-          <div class="prog" style="width:50px"><div class="prog-fill" style="width:${Math.min(100,(d.satisfaction_score||0)*20)}%;background:var(--green)"></div></div>
-          <span>${H.fmt(d.satisfaction_score,1)}/5</span>
-        </div>
-      </td>
-      <td>${H.pct(d.internship_rate_pct,1)}</td>
-    </tr>`).join("")||`<tr><td colspan="6" style="padding:1rem;text-align:center;color:var(--muted)">No data</td></tr>`;
-}
-
-// =========================================================
-// ADMISSION FUNNEL
-// =========================================================
-function renderFunnel(){
-  const data=DB.admFunnel||[];
-  if(!data.length){document.getElementById("funnelContainer").innerHTML="<p style='color:var(--muted);font-size:.8rem'>No data</p>";return;}
-  const max=Math.max(...data.map(d=>d.total),1);
-  const colors=["#6366f1","#06b6d4","#10b981","#f59e0b","#ef4444"];
-  document.getElementById("funnelContainer").innerHTML=`<div class="funnel">${data.map((d,i)=>`
-    <div class="funnel-step">
-      <div class="funnel-label">${d.stage||"—"}</div>
-      <div class="funnel-bar-wrap">
-        <div class="prog"><div class="prog-fill" style="width:${((d.total/max)*100).toFixed(1)}%;background:${colors[i%colors.length]};height:14px;border-radius:4px"></div></div>
-      </div>
-      <div class="funnel-val" style="color:${colors[i%colors.length]}">${H.fmt(d.total)}</div>
-    </div>`).join("")}</div>`;
-}
-
-// =========================================================
-// AT-RISK TABLE
-// =========================================================
-let _atRiskRaw=[];
-function renderAtRisk(){
-  _atRiskRaw=DB.atRisk||[];
-  filterRiskTable();
-}
-function filterRiskTable(){
-  const q=(document.getElementById("riskSearch")||{}).value?.toLowerCase()||"";
-  const rows=_atRiskRaw.filter(r=>!q||(String(r.student_id).includes(q)||(r.program||"").toLowerCase().includes(q)));
-  document.getElementById("riskTableBody").innerHTML=rows.slice(0,100).map(r=>`
-    <tr>
-      <td><code>${r.student_id}</code></td>
-      <td>${r.program||"—"}</td>
-      <td>${r.intake_year||"—"}</td>
-      <td><b style="color:${Number(r.cgpa)<2.0?"#ef4444":Number(r.cgpa)<2.5?"#f59e0b":"var(--text)"}">${H.fmt(r.cgpa,2)}</b></td>
-      <td>${H.pct(r.attendance_pct,1)}</td>
-      <td>${boolIcon(r.fees_unpaid)}</td>
-      <td style="font-size:.72rem;color:var(--muted)">${r.warning_signs||"—"}</td>
-    </tr>`).join("")||`<tr><td colspan="7" style="padding:1rem;text-align:center;color:var(--muted)">No at-risk students found ✅</td></tr>`;
-}
-
-// =========================================================
-// GENDER BY PROGRAM (Grouped bar)
-// =========================================================
-function renderGenderByProg(){
-  const data=(DB.genderByProg||[]).slice(0,10);
-  const {gridColor}=chartDefaults();
-  mkChart("genderByProg",{type:"bar",data:{
-    labels:data.map(d=>truncate(d.program,18)),
-    datasets:[
-      {label:"Female",data:data.map(d=>d.female||0),backgroundColor:"#ec489999",borderRadius:4},
-      {label:"Male",data:data.map(d=>d.male||0),backgroundColor:"#3b82f699",borderRadius:4},
-    ]
-  },options:{responsive:true,plugins:{legend:{position:"bottom",labels:{font:{size:11},boxWidth:12}}},scales:{x:{stacked:false,grid:{display:false}},y:{grid:{color:gridColor}}}}});
-}
-
-// =========================================================
-// YEAR-OVER-YEAR GROWTH (Line)
-// =========================================================
-function renderYoY(){
-  const data=DB.admGrowth||[];
-  const programs=[...new Set(data.map(d=>d.program))].slice(0,5);
-  const years=[...new Set(data.map(d=>d.cycle_year))].sort();
-  const {gridColor}=chartDefaults();
-  mkChart("yoyChart",{type:"line",data:{
-    labels:years,
-    datasets:programs.map((prog,i)=>({
-      label:truncate(prog,20),
-      data:years.map(y=>{const r=data.find(d=>d.program===prog&&d.cycle_year===y);return r?r.enrolled:null}),
-      borderColor:pal(i),backgroundColor:"transparent",tension:.4,pointRadius:4,
-    }))
-  },options:{responsive:true,plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:10}}},scales:{x:{grid:{color:gridColor}},y:{grid:{color:gridColor}}}}});
-}
-
-// =========================================================
-// MARKET GAP
-// =========================================================
-function renderMarketGap(){
-  const data=(DB.marketGaps||[]).slice(0,15);
-  if(!data.length){document.getElementById("marketGapContainer").innerHTML="<p style='color:var(--muted);font-size:.8rem'>No gap data available</p>";return;}
-  document.getElementById("marketGapContainer").innerHTML=`<div>${data.map(g=>`
-    <div class="gap-item">
-      <div class="gap-score">${g.demand_score}</div>
-      <div>
-        <div style="font-size:.82rem;font-weight:600">${g.skill_area||"—"}</div>
-        <div class="prog" style="width:150px;margin-top:.3rem"><div class="prog-fill" style="width:${Math.min(100,g.demand_score)}%;background:${g.demand_score>=80?"#ef4444":g.demand_score>=60?"#f59e0b":"#6366f1"}"></div></div>
-      </div>
-      <div style="margin-left:auto;font-size:.72rem;color:var(--muted)">Market need</div>
-    </div>`).join("")}</div>`;
-}
-
-// =========================================================
-// SATISFACTION (Bar)
-// =========================================================
-function renderSatisfaction(){
-  const data=DB.deptSummary||[];
-  const {gridColor}=chartDefaults();
-  mkChart("satisfactionChart",{type:"bar",data:{
-    labels:data.map(d=>truncate(d.department,18)),
-    datasets:[{label:"Satisfaction Score",data:data.map(d=>Number(d.satisfaction_score)||0),backgroundColor:data.map(d=>Number(d.satisfaction_score)>=4?"#10b981cc":Number(d.satisfaction_score)>=3?"#f59e0bcc":"#ef4444cc"),borderRadius:6}]
-  },options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{min:0,max:5,grid:{color:gridColor}}}}});
-}
-
-// =========================================================
-// FILTERS (global — redraw charts with filtered data subsets)
-// =========================================================
-function applyFilters(){
-  // For now, re-render tables that support filtering
-  filterProgramTable();
-  filterRiskTable();
-}
-function resetFilters(){
-  ["f-year","f-dept","f-prog","f-level","f-gender","f-status"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=""});
-  applyFilters();
-}
-
-// =========================================================
-// TABLE SORT
-// =========================================================
-function sortTable(tableId, colIdx){
-  const tbody=document.getElementById(tableId+"Body")||(document.querySelector(`#${tableId} tbody`));
-  if(!tbody)return;
-  const dir=sortDirs[tableId+"_"+colIdx]===1?-1:1;
-  sortDirs[tableId+"_"+colIdx]=dir;
-  const rows=Array.from(tbody.querySelectorAll("tr"));
-  rows.sort((a,b)=>{
-    const at=a.cells[colIdx]?.textContent.trim()||"";
-    const bt=b.cells[colIdx]?.textContent.trim()||"";
-    const an=Number(at.replace(/[^0-9.-]/g,"")), bn=Number(bt.replace(/[^0-9.-]/g,""));
-    if(!isNaN(an)&&!isNaN(bn))return(an-bn)*dir;
-    return at.localeCompare(bt)*dir;
-  });
-  rows.forEach(r=>tbody.appendChild(r));
-}
-
-// =========================================================
-// EXPORT CSV
-// =========================================================
-function exportAllCSV(){
-  const tables=[
-    {id:"progTable",name:"programs"},
-    {id:"employerTable",name:"employers"},
-    {id:"alumniPlacementTable",name:"alumni_placement"},
-    {id:"riskTable",name:"at_risk_students"},
-    {id:"deptTable",name:"dept_summary"},
-  ];
-  tables.forEach(({id,name})=>{
-    const tbl=document.getElementById(id);
-    if(!tbl)return;
-    let csv="";
-    for(const row of tbl.rows){
-      const cells=Array.from(row.cells).map(c=>'"'+c.textContent.trim().replace(/"/g,'""')+'"');
-      csv+=cells.join(",")+"\n";
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Apex University • Academic & Student Analytics Intelligence Dashboard</title>
+  
+  <!-- Inter & JetBrains Mono Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: ['selector', '[data-theme="dark"]'],
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
     }
-    const a=document.createElement("a");
-    a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
-    a.download=name+"_export.csv";
-    a.click();
-  });
-}
+  </script>
 
-// =========================================================
-// REDRAW CHARTS ON THEME CHANGE
-// =========================================================
-function redrawCharts(){
-  renderAll();
-}
+  <!-- Chart.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
-// =========================================================
-// UTILS
-// =========================================================
-function truncate(s,n){return s&&s.length>n?s.slice(0,n)+"…":s||""}
+  <style>
+    :root {
+      --bg-page: #f8fafc;
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --primary: #4f46e5;
+      --primary-light: #eef2ff;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --purple: #8b5cf6;
+      --cyan: #06b6d4;
+    }
 
-// =========================================================
-// BOOT
-// =========================================================
-fetchAll();
-</script>
+    [data-theme="dark"] {
+      --bg-page: #090d16;
+      --card-bg: #111827;
+      --card-border: #1f2937;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --primary: #6366f1;
+      --primary-light: #1e1b4b;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --purple: #a855f7;
+      --cyan: #22d3ee;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      font-family: 'Inter', system-ui, sans-serif;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    .glass-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 1rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .glass-card:hover {
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+    }
+
+    .tab-btn {
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .tab-btn.active {
+      color: var(--primary);
+      background-color: var(--primary-light);
+      font-weight: 600;
+    }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 12px;
+      right: 12px;
+      height: 3px;
+      background: var(--primary);
+      border-radius: 9999px;
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    [data-theme="dark"] ::-webkit-scrollbar-thumb {
+      background: #374151;
+    }
+
+    .pulse-dot {
+      animation: pulseAnimation 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulseAnimation {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+  <!-- ============================================================
+       TOP NAVIGATION BAR
+       ============================================================ -->
+  <header class="sticky top-0 z-50 backdrop-blur-md bg-opacity-90 border-b border-[var(--card-border)] bg-[var(--card-bg)] px-4 sm:px-6 py-3.5 transition-colors">
+    <div class="max-w-[1700px] mx-auto flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Brand & Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-500/25">
+          🏛️
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-lg tracking-tight text-[var(--text-main)]">University Analytics Dashboard</h1>
+            <span class="text-xs px-2 py-0.5 rounded-full font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300">Live Supabase</span>
+          </div>
+          <p class="text-xs text-[var(--text-muted)]">Executive Insights: Departments, Students & Alumni Records</p>
+        </div>
+      </div>
+
+      <!-- Live Connection & Actions -->
+      <div class="flex items-center gap-3">
+        <!-- Supabase Connection Badge -->
+        <div id="conn-status-badge" class="flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 pulse-dot"></span>
+          <span id="conn-status-text">Connecting to Supabase...</span>
+          <span id="conn-latency" class="opacity-75 font-mono text-[10px]"></span>
+        </div>
+
+        <!-- Refresh Button -->
+        <button id="refresh-btn" onclick="fetchAllData()" class="p-2 rounded-lg border border-[var(--card-border)] hover:bg-[var(--card-border)]/30 text-[var(--text-main)] transition" title="Refresh Live Data">
+          <svg class="w-4 h-4" id="refresh-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button id="theme-btn" onclick="toggleTheme()" class="p-2 rounded-lg border border-[var(--card-border)] hover:bg-[var(--card-border)]/30 text-[var(--text-main)] transition" title="Toggle Light/Dark Theme">
+          <span id="theme-icon">🌙</span>
+        </button>
+
+        <!-- CSV Export -->
+        <button onclick="exportCurrentData()" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          Export CSV
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ============================================================
+       MAIN CONTENT CONTAINER
+       ============================================================ -->
+  <main class="flex-1 max-w-[1700px] w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- GLOBAL FILTER BAR -->
+    <section class="glass-card p-4">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">⚡ Interactive Filters</span>
+          <span id="filter-applied-count" class="hidden text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-500 text-white">0 active</span>
+        </div>
+        <button onclick="resetAllFilters()" class="text-xs text-[var(--primary)] hover:underline font-medium">Reset All Filters</button>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+        <!-- Year -->
+        <div>
+          <label class="block text-[11px] font-medium text-[var(--text-muted)] mb-1">Academic Year</label>
+          <select id="filter-year" onchange="onFilterChange()" class="w-full text-xs rounded-lg px-2.5 py-1.5 border border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-main)] focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            <option value="">All Years</option>
+          </select>
+        </div>
+
+        <!-- Department -->
+        <div>
+          <label class="block text-[11px] font-medium text-[var(--text-muted)] mb-1">Department</label>
+          <select id="filter-dept" onchange="onFilterChange()" class="w-full text-xs rounded-lg px-2.5 py-1.5 border border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-main)] focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            <option value="">All Departments</option>
+          </select>
+        </div>
+
+        <!-- Program -->
+        <div>
+          <label class="block text-[11px] font-medium text-[var(--text-muted)] mb-1">Program</label>
+          <select id="filter-program" onchange="onFilterChange()" class="w-full text-xs rounded-lg px-2.5 py-1.5 border border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-main)] focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            <option value="">All Programs</option>
+          </select>
+        </div>
+
+        <!-- Degree Level -->
+        <div>
+          <label class="block text-[11px] font-medium text-[var(--text-muted)] mb-1">Degree Level</label>
+          <select id="filter-level" onchange="onFilterChange()" class="w-full text-xs rounded-lg px-2.5 py-1.5 border border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-main)] focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            <option value="">All Levels</option>
+            <option value="BS">Undergraduate (BS)</option>
+            <option value="MS">Postgraduate (MS)</option>
+            <option value="PhD">Doctoral (PhD)</option>
+          </select>
+        </div>
+
+        <!-- Gender -->
+        <div>
+          <label class="block text-[11px] font-medium text-[var(--text-muted)] mb-1">Gender</label>
+          <select id="filter-gender" onchange="onFilterChange()" class="w-full text-xs rounded-lg px-2.5 py-1.5 border border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-main)] focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            <option value="">All Genders</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+        </div>
+
+        <!-- Status -->
+        <div>
+          <label class="block text-[11px] font-medium text-[var(--text-muted)] mb-1">Student Status</label>
+          <select id="filter-status" onchange="onFilterChange()" class="w-full text-xs rounded-lg px-2.5 py-1.5 border border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-main)] focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            <option value="">All Statuses</option>
+            <option value="Active">Active</option>
+            <option value="Graduated">Graduated</option>
+            <option value="Dropped Out">Dropped Out</option>
+            <option value="Suspended">Suspended</option>
+            <option value="On Leave">On Leave</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- AUTOMATIC SMART INSIGHTS BANNER -->
+    <section class="rounded-2xl p-4 bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 text-white shadow-md">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-sm font-semibold uppercase tracking-wider opacity-90">✨ Automatic Executive Insights</span>
+        <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/20 font-medium">Real-Time Computed</span>
+      </div>
+      <div id="smart-insights-list" class="flex flex-wrap gap-2.5">
+        <div class="text-xs bg-white/15 px-3 py-1.5 rounded-full flex items-center gap-2 animate-pulse">
+          <span>⏳ Calculating insights from database...</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         AUTOMATIC KPI SUMMARY CARDS (10 METRICS)
+         ============================================================ -->
+    <section>
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1.5">
+          <span>📊</span> Key Performance Indicators (Auto-Calculated)
+        </h2>
+        <span class="text-xs text-[var(--text-muted)] font-mono">Source: Supabase v_kpis & Aggregate Tables</span>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+        <!-- 1. Total Students -->
+        <div class="glass-card p-4 relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Total Students</span>
+            <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-base">📚</div>
+          </div>
+          <div class="text-2xl font-extrabold tracking-tight text-[var(--text-main)]" id="kpi-total-students">—</div>
+          <div class="flex items-center gap-1.5 mt-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+            <span>↑ Active Cohort</span>
+          </div>
+        </div>
+
+        <!-- 2. Active Students -->
+        <div class="glass-card p-4 relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Active Enrolled</span>
+            <div class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-base">✅</div>
+          </div>
+          <div class="text-2xl font-extrabold tracking-tight text-[var(--text-main)]" id="kpi-active-students">—</div>
+          <div class="flex items-center gap-1 mt-1 text-xs text-[var(--text-muted)]">
+            <span id="kpi-active-pct" class="font-semibold text-emerald-600 dark:text-emerald-400">—%</span> of total roster
+          </div>
+        </div>
+
+        <!-- 3. Graduation Rate -->
+        <div class="glass-card p-4 relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Graduation Rate</span>
+            <div class="w-8 h-8 rounded-lg bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 flex items-center justify-center text-base">🎓</div>
+          </div>
+          <div class="text-2xl font-extrabold tracking-tight text-[var(--text-main)]" id="kpi-grad-rate">—%</div>
+          <div class="flex items-center gap-1 mt-1 text-xs text-[var(--text-muted)]">
+            Avg <span id="kpi-avg-years" class="font-semibold text-[var(--text-main)]">—</span> yrs to completion
+          </div>
+        </div>
+
+        <!-- 4. Alumni Employment -->
+        <div class="glass-card p-4 relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Alumni Placement</span>
+            <div class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-base">💼</div>
+          </div>
+          <div class="text-2xl font-extrabold tracking-tight text-[var(--text-main)]" id="kpi-alumni-emp">—%</div>
+          <div class="flex items-center gap-1 mt-1 text-xs text-[var(--text-muted)]">
+            Avg salary: <span id="kpi-avg-salary" class="font-semibold text-indigo-600 dark:text-indigo-400">—</span>
+          </div>
+        </div>
+
+        <!-- 5. Academic Programs -->
+        <div class="glass-card p-4 relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Active Programs</span>
+            <div class="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center text-base">📋</div>
+          </div>
+          <div class="text-2xl font-extrabold tracking-tight text-[var(--text-main)]" id="kpi-total-programs">—</div>
+          <div class="flex items-center gap-1 mt-1 text-xs text-[var(--text-muted)]">
+            Across <span id="kpi-total-depts" class="font-semibold text-[var(--text-main)]">6</span> departments
+          </div>
+        </div>
+
+        <!-- 6. Total Faculty -->
+        <div class="glass-card p-4 relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Total Faculty</span>
+            <div class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-base">👨‍🏫</div>
+          </div>
+          <div class="text-2xl font-extrabold tracking-tight text-[var(--text-main)]" id="kpi-total-faculty">—</div>
+          <div class="flex items-center gap-1 mt-1 text-xs text-[var(--text-muted)]">
+            Student-Faculty: <span id="kpi-student-faculty-ratio" class="font-semibold text-amber-600 dark:text-amber-400">—</span>
+          </div>
+        </div>
+
+        <!-- 7. At-Risk Students -->
+        <div class="glass-card p-4 relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">At-Risk Students</span>
+            <div class="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center text-base">⚠️</div>
+          </div>
+          <div class="text-2xl font-extrabold tracking-tight text-rose-600 dark:text-rose-400" id="kpi-at-risk-count">—</div>
+          <div class="flex items-center gap-1 mt-1 text-xs text-[var(--text-muted)]">
+            Need intervention
+          </div>
+        </div>
+
+        <!-- 8. Avg Department Satisfaction -->
+        <div class="glass-card p-4 relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Dept Satisfaction</span>
+            <div class="w-8 h-8 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center text-base">⭐</div>
+          </div>
+          <div class="text-2xl font-extrabold tracking-tight text-[var(--text-main)]" id="kpi-avg-satisfaction">— / 5.0</div>
+          <div class="flex items-center gap-1 mt-1 text-xs text-[var(--text-muted)]">
+            Institutional rating
+          </div>
+        </div>
+
+        <!-- 9. Avg Internship Rate -->
+        <div class="glass-card p-4 relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Internship Rate</span>
+            <div class="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center text-base">🚀</div>
+          </div>
+          <div class="text-2xl font-extrabold tracking-tight text-[var(--text-main)]" id="kpi-internship-rate">—%</div>
+          <div class="flex items-center gap-1 mt-1 text-xs text-[var(--text-muted)]">
+            Industry exposure
+          </div>
+        </div>
+
+        <!-- 10. Partner Employers -->
+        <div class="glass-card p-4 relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Hiring Partners</span>
+            <div class="w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center text-base">🏢</div>
+          </div>
+          <div class="text-2xl font-extrabold tracking-tight text-[var(--text-main)]" id="kpi-total-employers">—</div>
+          <div class="flex items-center gap-1 mt-1 text-xs text-[var(--text-muted)]">
+            Fortune 500 & Multi.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         NAVIGATION TABS
+         ============================================================ -->
+    <div class="border-b border-[var(--card-border)] flex items-center gap-2 overflow-x-auto pb-1 text-sm">
+      <button onclick="switchTab('tab-overview')" id="btn-tab-overview" class="tab-btn active px-4 py-2.5 rounded-lg flex items-center gap-2 whitespace-nowrap">
+        <span>🌟</span> Executive Overview
+      </button>
+      <button onclick="switchTab('tab-departments')" id="btn-tab-departments" class="tab-btn px-4 py-2.5 rounded-lg flex items-center gap-2 whitespace-nowrap">
+        <span>🏛️</span> Department Insights
+      </button>
+      <button onclick="switchTab('tab-students')" id="btn-tab-students" class="tab-btn px-4 py-2.5 rounded-lg flex items-center gap-2 whitespace-nowrap">
+        <span>🎓</span> Student Analytics
+      </button>
+      <button onclick="switchTab('tab-alumni')" id="btn-tab-alumni" class="tab-btn px-4 py-2.5 rounded-lg flex items-center gap-2 whitespace-nowrap">
+        <span>💼</span> Alumni Records & Placement
+      </button>
+      <button onclick="switchTab('tab-explorer')" id="btn-tab-explorer" class="tab-btn px-4 py-2.5 rounded-lg flex items-center gap-2 whitespace-nowrap">
+        <span>🗃️</span> Live Data Explorer (Raw Records)
+      </button>
+    </div>
+
+    <!-- ============================================================
+         TAB 1: EXECUTIVE OVERVIEW
+         ============================================================ -->
+    <div id="tab-overview" class="tab-content space-y-6">
+      
+      <!-- Row 1: Funnel & 5-Year Trend -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Admission Funnel -->
+        <div class="glass-card p-5 lg:col-span-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-bold text-sm text-[var(--text-main)]">Admission Conversion Funnel</h3>
+                <p class="text-xs text-[var(--text-muted)]">Applications to Matriculation stages</p>
+              </div>
+              <span class="text-xs font-mono px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">v_admission_funnel</span>
+            </div>
+            <div id="funnel-container" class="space-y-3.5 pt-2">
+              <div class="text-xs text-[var(--text-muted)] py-6 text-center">Loading funnel data...</div>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-[var(--card-border)] flex items-center justify-between text-xs text-[var(--text-muted)]">
+            <span>Overall Yield Rate: <b id="funnel-yield" class="text-emerald-600 dark:text-emerald-400">—%</b></span>
+            <span>Total Inflow: <b id="funnel-total" class="text-[var(--text-main)]">—</b></span>
+          </div>
+        </div>
+
+        <!-- 5-Year Student Status Trend -->
+        <div class="glass-card p-5 lg:col-span-7">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h3 class="font-bold text-sm text-[var(--text-main)]">5-Year Student Status Trend</h3>
+              <p class="text-xs text-[var(--text-muted)]">Active vs Non-Active student trajectory</p>
+            </div>
+            <div class="flex items-center gap-3 text-xs">
+              <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-500"></span> Active</span>
+              <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-rose-500"></span> Non-Active</span>
+            </div>
+          </div>
+          <div class="h-64">
+            <canvas id="chart-status-trend"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: Geographic & Scholarship Split & Market Demand Gaps -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Geographic Distribution -->
+        <div class="glass-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-sm text-[var(--text-main)]">Student Origin (Province)</h3>
+            <span class="text-xs text-[var(--text-muted)]">v_province_distribution</span>
+          </div>
+          <div class="h-56">
+            <canvas id="chart-geo"></canvas>
+          </div>
+        </div>
+
+        <!-- Scholarship vs Self-Financed -->
+        <div class="glass-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-sm text-[var(--text-main)]">Funding & Scholarships</h3>
+            <span class="text-xs text-[var(--text-muted)]">v_scholarship_split</span>
+          </div>
+          <div class="h-56">
+            <canvas id="chart-scholarship"></canvas>
+          </div>
+        </div>
+
+        <!-- Market Demand Gaps -->
+        <div class="glass-card p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-bold text-sm text-[var(--text-main)]">Market Skill Demand Gaps</h3>
+              <span class="text-xs text-[var(--text-muted)]">market_gaps</span>
+            </div>
+            <div id="market-gaps-list" class="space-y-3 pt-1">
+              <div class="text-xs text-[var(--text-muted)] py-6 text-center">Loading market gaps...</div>
+            </div>
+          </div>
+          <p class="text-[11px] text-[var(--text-muted)] pt-3 border-t border-[var(--card-border)]">Scores above 80 represent critical curricular expansion priorities.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================================
+         TAB 2: DEPARTMENT INSIGHTS
+         ============================================================ -->
+    <div id="tab-departments" class="tab-content hidden space-y-6">
+      
+      <!-- Department Summary Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="dept-cards-grid">
+        <!-- Rendered via JS -->
+      </div>
+
+      <!-- Department Comparative Analytics -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Faculty vs Students per Faculty -->
+        <div class="glass-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-sm text-[var(--text-main)]">Student-to-Faculty Ratio by Department</h3>
+            <span class="text-xs text-[var(--text-muted)]">Higher = more overloaded faculty</span>
+          </div>
+          <div class="h-64">
+            <canvas id="chart-dept-ratio"></canvas>
+          </div>
+        </div>
+
+        <!-- Satisfaction & Internship Rate -->
+        <div class="glass-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-sm text-[var(--text-main)]">Satisfaction Score & Internship Placement</h3>
+            <span class="text-xs text-[var(--text-muted)]">Target: &gt; 4.0 Satisfaction &amp; &gt; 70% Placement</span>
+          </div>
+          <div class="h-64">
+            <canvas id="chart-dept-satisfaction"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Department Directory Table -->
+      <div class="glass-card p-5">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h3 class="font-bold text-sm text-[var(--text-main)]">Academic Programs Directory (By Department)</h3>
+            <p class="text-xs text-[var(--text-muted)]">Seats, Duration, Degree Level & Starting Salaries</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="text" id="prog-table-search" oninput="filterProgramsDirectory()" placeholder="Search program or department..." class="text-xs rounded-lg px-3 py-1.5 border border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-main)] w-56 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+          </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-[var(--card-border)]">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-[var(--card-border)]/40 font-semibold text-[var(--text-muted)] uppercase tracking-wider text-[11px]">
+              <tr>
+                <th class="p-3">Program Name</th>
+                <th class="p-3">Department</th>
+                <th class="p-3">Level</th>
+                <th class="p-3">Duration</th>
+                <th class="p-3">Seats</th>
+                <th class="p-3">Avg Salary</th>
+                <th class="p-3">Status</th>
+              </tr>
+            </thead>
+            <tbody id="programs-directory-tbody" class="divide-y divide-[var(--card-border)]">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================================
+         TAB 3: STUDENT ANALYTICS
+         ============================================================ -->
+    <div id="tab-students" class="tab-content hidden space-y-6">
+      
+      <!-- Student Status Breakdown & Retention -->
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+        <!-- Status Donut -->
+        <div class="glass-card p-5 md:col-span-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-sm text-[var(--text-main)]">Student Status Distribution</h3>
+            <span class="text-xs text-[var(--text-muted)]">v_status_summary</span>
+          </div>
+          <div class="h-60">
+            <canvas id="chart-status-donut"></canvas>
+          </div>
+        </div>
+
+        <!-- Retention by Study Year -->
+        <div class="glass-card p-5 md:col-span-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-sm text-[var(--text-main)]">Cohort Retention Across Years</h3>
+            <span class="text-xs text-[var(--text-muted)]">v_retention_by_year</span>
+          </div>
+          <div class="h-60">
+            <canvas id="chart-retention"></canvas>
+          </div>
+        </div>
+
+        <!-- Dropout Reasons -->
+        <div class="glass-card p-5 md:col-span-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-sm text-[var(--text-main)]">Dropout & Leave Reasons</h3>
+            <span class="text-xs text-[var(--text-muted)]">v_leave_reasons</span>
+          </div>
+          <div class="h-60">
+            <canvas id="chart-dropout-reasons"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- CGPA by Program & Gender Distribution -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- CGPA by Program -->
+        <div class="glass-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-sm text-[var(--text-main)]">Average CGPA & At-Risk Concentration</h3>
+            <span class="text-xs text-[var(--text-muted)]">Red bar = CGPA &lt; 2.5</span>
+          </div>
+          <div class="h-64">
+            <canvas id="chart-cgpa"></canvas>
+          </div>
+        </div>
+
+        <!-- Gender by Program -->
+        <div class="glass-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-sm text-[var(--text-main)]">Gender Ratio by Academic Program</h3>
+            <span class="text-xs text-[var(--text-muted)]">Female vs Male enrollment</span>
+          </div>
+          <div class="h-64">
+            <canvas id="chart-gender-prog"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- EARLY WARNING AT-RISK STUDENTS MONITORING TABLE -->
+      <div class="glass-card p-5 border-l-4 border-l-rose-500">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-base">⚠️</span>
+              <h3 class="font-bold text-sm text-[var(--text-main)]">Early Warning System: Students Requiring Intervention</h3>
+            </div>
+            <p class="text-xs text-[var(--text-muted)]">Students flagged for low CGPA (&lt; 2.5), low attendance (&lt; 75%), or unpaid fees</p>
+          </div>
+          <input type="text" id="risk-search-input" oninput="filterAtRiskStudents()" placeholder="Search by student ID or program..." class="text-xs rounded-lg px-3 py-1.5 border border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-main)] w-60 focus:outline-none focus:ring-1 focus:ring-rose-500">
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-[var(--card-border)] max-h-80 overflow-y-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-[var(--card-border)]/40 font-semibold text-[var(--text-muted)] uppercase tracking-wider text-[11px] sticky top-0 backdrop-blur-sm">
+              <tr>
+                <th class="p-3">Student ID</th>
+                <th class="p-3">Program</th>
+                <th class="p-3">Intake</th>
+                <th class="p-3">CGPA</th>
+                <th class="p-3">Attendance</th>
+                <th class="p-3">Fees Unpaid</th>
+                <th class="p-3">Warning Flags</th>
+              </tr>
+            </thead>
+            <tbody id="risk-table-tbody" class="divide-y divide-[var(--card-border)]">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================================
+         TAB 4: ALUMNI RECORDS & PLACEMENT
+         ============================================================ -->
+    <div id="tab-alumni" class="tab-content hidden space-y-6">
+      
+      <!-- Top Employers & High Placement Programs -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Top Employers Leaderboard -->
+        <div class="glass-card p-5 lg:col-span-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-bold text-sm text-[var(--text-main)]">Top Employers by Alumni Count</h3>
+              <p class="text-xs text-[var(--text-muted)]">Organizations hiring the most graduates</p>
+            </div>
+            <span class="text-xs font-mono text-[var(--text-muted)]">v_alumni_top_employers</span>
+          </div>
+
+          <div class="overflow-x-auto rounded-xl border border-[var(--card-border)] max-h-80 overflow-y-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-[var(--card-border)]/40 font-semibold text-[var(--text-muted)] uppercase tracking-wider text-[11px] sticky top-0 backdrop-blur-sm">
+                <tr>
+                  <th class="p-3">Employer</th>
+                  <th class="p-3">Type</th>
+                  <th class="p-3">Industry</th>
+                  <th class="p-3">Alumni Hired</th>
+                  <th class="p-3">Reputable</th>
+                </tr>
+              </thead>
+              <tbody id="alumni-top-employers-tbody" class="divide-y divide-[var(--card-border)]">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Program Placement & Salary Spectrum -->
+        <div class="glass-card p-5 lg:col-span-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-bold text-sm text-[var(--text-main)]">Placement Rate & Salary Benchmark</h3>
+              <p class="text-xs text-[var(--text-muted)]">Placement % and Salary range (Min - Avg - Max)</p>
+            </div>
+            <span class="text-xs font-mono text-[var(--text-muted)]">v_alumni_placement</span>
+          </div>
+
+          <div class="overflow-x-auto rounded-xl border border-[var(--card-border)] max-h-80 overflow-y-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-[var(--card-border)]/40 font-semibold text-[var(--text-muted)] uppercase tracking-wider text-[11px] sticky top-0 backdrop-blur-sm">
+                <tr>
+                  <th class="p-3">Program</th>
+                  <th class="p-3">Alumni</th>
+                  <th class="p-3">Placement %</th>
+                  <th class="p-3">Avg Salary (PKR)</th>
+                </tr>
+              </thead>
+              <tbody id="alumni-placement-tbody" class="divide-y divide-[var(--card-border)]">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Industry, Employer Type & Destination Location -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Industry Breakdown -->
+        <div class="glass-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-sm text-[var(--text-main)]">Alumni by Industry</h3>
+            <span class="text-xs text-[var(--text-muted)]">v_alumni_by_industry</span>
+          </div>
+          <div class="h-60">
+            <canvas id="chart-alumni-industry"></canvas>
+          </div>
+        </div>
+
+        <!-- Employer Organization Type -->
+        <div class="glass-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-sm text-[var(--text-main)]">Organization Type</h3>
+            <span class="text-xs text-[var(--text-muted)]">Fortune 500, Multi, Local</span>
+          </div>
+          <div class="h-60">
+            <canvas id="chart-employer-type"></canvas>
+          </div>
+        </div>
+
+        <!-- Domestic vs Overseas vs Higher Studies -->
+        <div class="glass-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-sm text-[var(--text-main)]">Career Destination</h3>
+            <span class="text-xs text-[var(--text-muted)]">Local, Abroad, Higher Ed</span>
+          </div>
+          <div class="h-60">
+            <canvas id="chart-alumni-location"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================================
+         TAB 5: LIVE DATA EXPLORER (RAW RECORDS)
+         ============================================================ -->
+    <div id="tab-explorer" class="tab-content hidden space-y-6">
+      
+      <div class="glass-card p-5">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+          <div>
+            <h3 class="font-bold text-base text-[var(--text-main)]">Real-Time Database Records Explorer</h3>
+            <p class="text-xs text-[var(--text-muted)]">Direct query explorer for Departments, Students, and Alumni records</p>
+          </div>
+
+          <!-- Subtabs for Entities -->
+          <div class="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--card-border)]/40 text-xs font-medium">
+            <button onclick="switchExplorerEntity('departments')" id="exp-btn-departments" class="px-3 py-1.5 rounded-lg bg-[var(--card-bg)] shadow-sm font-semibold text-[var(--primary)]">
+              Departments (<span id="exp-count-dept">6</span>)
+            </button>
+            <button onclick="switchExplorerEntity('students')" id="exp-btn-students" class="px-3 py-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)]">
+              Students (<span id="exp-count-students">360</span>)
+            </button>
+            <button onclick="switchExplorerEntity('alumni')" id="exp-btn-alumni" class="px-3 py-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)]">
+              Alumni Records (<span id="exp-count-alumni">320</span>)
+            </button>
+          </div>
+        </div>
+
+        <!-- Search and Pagination Controls -->
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <div class="flex items-center gap-2">
+            <input type="text" id="explorer-search" oninput="onExplorerSearch()" placeholder="Search records in active table..." class="text-xs rounded-lg px-3 py-1.5 border border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-main)] w-64 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            <span id="explorer-match-count" class="text-xs text-[var(--text-muted)]"></span>
+          </div>
+
+          <div class="flex items-center gap-2 text-xs">
+            <button onclick="explorerPrevPage()" id="exp-prev-btn" class="px-2.5 py-1 rounded border border-[var(--card-border)] hover:bg-[var(--card-border)]/30 disabled:opacity-30">Previous</button>
+            <span id="exp-page-indicator" class="font-mono">Page 1 of 1</span>
+            <button onclick="explorerNextPage()" id="exp-next-btn" class="px-2.5 py-1 rounded border border-[var(--card-border)] hover:bg-[var(--card-border)]/30 disabled:opacity-30">Next</button>
+          </div>
+        </div>
+
+        <!-- Explorer Table Container -->
+        <div class="overflow-x-auto rounded-xl border border-[var(--card-border)] min-h-[350px]">
+          <table class="w-full text-left text-xs" id="explorer-table">
+            <thead class="bg-[var(--card-border)]/40 font-semibold text-[var(--text-muted)] uppercase tracking-wider text-[11px]" id="explorer-thead">
+              <!-- Dynamically populated -->
+            </thead>
+            <tbody id="explorer-tbody" class="divide-y divide-[var(--card-border)]">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ============================================================
+       FOOTER
+       ============================================================ -->
+  <footer class="mt-auto border-t border-[var(--card-border)] bg-[var(--card-bg)] py-4 px-6 text-center text-xs text-[var(--text-muted)]">
+    <div class="max-w-[1700px] mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div>Apex University Academic Intelligence System • Project ID: <code class="font-mono text-indigo-600 dark:text-indigo-400">qbhfwfyrffmrconfvmiz</code></div>
+      <div>Connected to Supabase PostgreSQL Database with automated KPI aggregation</div>
+    </div>
+  </footer>
+
+  <!-- ============================================================
+       SCRIPTS: SUPABASE LIVE CONNECTOR & ENGINE
+       ============================================================ -->
+  <script>
+    // Supabase REST Configuration
+    const SUPABASE_PROJECT_ID = "qbhfwfyrffmrconfvmiz";
+    const SUPABASE_URL = "https://" + SUPABASE_PROJECT_ID + ".supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFiaGZ3ZnlyZmZtcmNvbmZ2bWl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUxMjM0MTEsImV4cCI6MjExMDY5OTQxMX0.PwF1q2HkmckNtFen-COvuFmljxUMvo1muIAboICRkC8";
+
+    // Application State
+    let DB = {};
+    let CHARTS = {};
+    let explorerState = {
+      entity: 'departments',
+      page: 1,
+      pageSize: 15,
+      search: ''
+    };
+
+    // Color Palette for Visualizations
+    const PALETTE = [
+      '#6366f1', '#06b6d4', '#10b981', '#f59e0b', '#ef4444',
+      '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#3b82f6'
+    ];
+
+    // Data Fetcher with Automatic Proxy Fallback
+    async function apiGet(endpoint, params = {}) {
+      try {
+        const url = new URL(SUPABASE_URL + "/rest/v1/" + endpoint);
+        Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+        const res = await fetch(url.toString(), {
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+            'Accept': 'application/json'
+          }
+        });
+        if (res.ok) return await res.json();
+        throw new Error("Direct API status: " + res.status);
+      } catch (err) {
+        // Fallback to local server proxy if served over http/localhost
+        if (window.location.origin && window.location.origin.startsWith('http')) {
+          try {
+            const proxyUrl = new URL(window.location.origin + "/api/supabase/" + endpoint);
+            Object.entries(params).forEach(([k, v]) => proxyUrl.searchParams.set(k, v));
+            const proxyRes = await fetch(proxyUrl.toString());
+            if (proxyRes.ok) return await proxyRes.json();
+          } catch (proxyErr) {
+            console.warn("Proxy fallback also failed:", proxyErr);
+          }
+        }
+        throw err;
+      }
+    }
+
+    // Number & Percentage Formatting Helpers
+    const Fmt = {
+      num: (n, dec = 0) => {
+        if (n == null || isNaN(n)) return '—';
+        return Number(n).toLocaleString(undefined, { maximumFractionDigits: dec, minimumFractionDigits: dec });
+      },
+      pct: (n, dec = 1) => {
+        if (n == null || isNaN(n)) return '—%';
+        return Number(n).toLocaleString(undefined, { maximumFractionDigits: dec, minimumFractionDigits: dec }) + '%';
+      },
+      curr: (n) => {
+        if (n == null || isNaN(n)) return '—';
+        return 'PKR ' + Number(n).toLocaleString() + 'K';
+      }
+    };
+
+    // ============================================================
+    // MAIN FETCH & DATA REFRESH
+    // ============================================================
+    async function fetchAllData() {
+      const connBadge = document.getElementById('conn-status-badge');
+      const connText = document.getElementById('conn-status-text');
+      const connLatency = document.getElementById('conn-latency');
+      const refreshIcon = document.getElementById('refresh-icon');
+
+      connText.textContent = "Syncing live data...";
+      if (refreshIcon) refreshIcon.classList.add('animate-spin');
+
+      const startTime = performance.now();
+
+      // Method 1: Check if /api/data aggregate endpoint is available on local server
+      if (window.location.origin && window.location.origin.startsWith('http')) {
+        try {
+          const fastRes = await fetch(window.location.origin + '/api/data');
+          if (fastRes.ok) {
+            const aggregateData = await fastRes.json();
+            const elapsed = Math.round(performance.now() - startTime);
+            DB = aggregateData;
+
+            connBadge.className = "flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300";
+            connText.textContent = "Supabase Connected";
+            connLatency.textContent = "(" + elapsed + "ms)";
+
+            populateFilterOptions();
+            renderKPIs();
+            renderSmartInsights();
+            renderOverviewCharts();
+            renderDepartmentTab();
+            renderStudentTab();
+            renderAlumniTab();
+            renderExplorerTab();
+
+            if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+            return;
+          }
+        } catch (fastErr) {
+          console.log("Single endpoint not available, falling back to direct parallel queries...");
+        }
+      }
+
+      // Method 2: Direct parallel Supabase queries
+      try {
+        const [
+          kpis,
+          deptSummary,
+          departments,
+          programs,
+          employers,
+          statusSummary,
+          statusTrend,
+          retention,
+          funnel,
+          atRisk,
+          alumniPlacement,
+          alumniIndustry,
+          alumniEmployerType,
+          alumniLocation,
+          alumniTopEmployers,
+          geoDist,
+          scholarship,
+          cgpa,
+          leaveReasons,
+          genderProg,
+          marketGaps,
+          students,
+          alumni
+        ] = await Promise.all([
+          apiGet("v_kpis"),
+          apiGet("v_dept_summary", { order: "enrolled_students.desc" }),
+          apiGet("departments", { order: "name.asc" }),
+          apiGet("programs", { order: "name.asc" }),
+          apiGet("employers", { order: "name.asc" }),
+          apiGet("v_status_summary"),
+          apiGet("v_status_trend", { order: "year.asc" }),
+          apiGet("v_retention_by_year", { order: "year_of_study.asc" }),
+          apiGet("v_admission_funnel"),
+          apiGet("v_at_risk_students", { order: "cgpa.asc", limit: "200" }),
+          apiGet("v_alumni_placement", { order: "alumni.desc" }),
+          apiGet("v_alumni_by_industry", { order: "alumni.desc" }),
+          apiGet("v_alumni_employer_type"),
+          apiGet("v_alumni_location"),
+          apiGet("v_alumni_top_employers", { order: "alumni.desc", limit: "15" }),
+          apiGet("v_province_distribution", { order: "students.desc" }),
+          apiGet("v_scholarship_split"),
+          apiGet("v_cgpa_by_program", { order: "avg_cgpa.desc" }),
+          apiGet("v_leave_reasons", { order: "students.desc" }),
+          apiGet("v_gender_by_program", { order: "program.asc" }),
+          apiGet("market_gaps", { order: "demand_score.desc" }),
+          apiGet("students", { select: "*,programs(name)", order: "id.asc", limit: "500" }),
+          apiGet("alumni", { select: "*,programs(name),employers(name)", order: "id.asc", limit: "500" })
+        ]);
+
+        const elapsed = Math.round(performance.now() - startTime);
+
+        DB = {
+          kpis: kpis[0] || {},
+          deptSummary,
+          departments,
+          programs,
+          employers,
+          statusSummary,
+          statusTrend,
+          retention,
+          funnel,
+          atRisk,
+          alumniPlacement,
+          alumniIndustry,
+          alumniEmployerType,
+          alumniLocation,
+          alumniTopEmployers,
+          geoDist,
+          scholarship,
+          cgpa,
+          leaveReasons,
+          genderProg,
+          marketGaps,
+          students,
+          alumni
+        };
+
+        connBadge.className = "flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300";
+        connText.textContent = "Supabase Connected";
+        connLatency.textContent = "(" + elapsed + "ms)";
+
+        populateFilterOptions();
+        renderKPIs();
+        renderSmartInsights();
+        renderOverviewCharts();
+        renderDepartmentTab();
+        renderStudentTab();
+        renderAlumniTab();
+        renderExplorerTab();
+
+      } catch (err) {
+        console.error("Failed to load live Supabase data:", err);
+        connBadge.className = "flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300";
+        connText.textContent = "Supabase Live (Check Network)";
+        connLatency.textContent = "(Offline Mode)";
+      } finally {
+        if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+      }
+    }
+
+    // ============================================================
+    // AUTOMATIC KPI CALCULATION
+    // ============================================================
+    function renderKPIs() {
+      const k = DB.kpis || {};
+      const depts = DB.departments || [];
+      const atRiskCount = (DB.atRisk || []).length;
+      const employersCount = (DB.employers || []).length;
+
+      // Calculate Faculty & Department aggregates
+      const totalFaculty = depts.reduce((acc, d) => acc + (d.faculty_count || 0), 0);
+      const totalEnrolled = depts.reduce((acc, d) => acc + (d.enrolled_students || 0), 0);
+      const avgSatisfaction = depts.length ? (depts.reduce((acc, d) => acc + (d.satisfaction_score || 0), 0) / depts.length).toFixed(1) : '—';
+      const avgInternship = depts.length ? Math.round(depts.reduce((acc, d) => acc + (d.internship_rate_pct || 0), 0) / depts.length) : '—';
+      const studentFacultyRatio = totalFaculty ? (totalEnrolled / totalFaculty).toFixed(1) + ' : 1' : '—';
+
+      // Starting salary average from placement view
+      const placements = DB.alumniPlacement || [];
+      const avgSalary = placements.length ? Math.round(placements.reduce((acc, p) => acc + (p.avg_salary_k || 0), 0) / placements.length) : null;
+
+      document.getElementById('kpi-total-students').textContent = Fmt.num(k.total_students);
+      document.getElementById('kpi-active-students').textContent = Fmt.num(k.active_students);
+      document.getElementById('kpi-active-pct').textContent = Fmt.pct(k.active_pct, 1);
+      document.getElementById('kpi-grad-rate').textContent = Fmt.pct(k.graduation_rate_pct, 1);
+      document.getElementById('kpi-avg-years').textContent = Fmt.num(k.avg_years_to_graduate, 1);
+      document.getElementById('kpi-alumni-emp').textContent = Fmt.pct(k.alumni_employment_pct, 1);
+      document.getElementById('kpi-avg-salary').textContent = avgSalary ? Fmt.curr(avgSalary) + '/mo' : '—';
+      document.getElementById('kpi-total-programs').textContent = Fmt.num(k.total_programs);
+      document.getElementById('kpi-total-depts').textContent = depts.length || '6';
+      document.getElementById('kpi-total-faculty').textContent = Fmt.num(totalFaculty);
+      document.getElementById('kpi-student-faculty-ratio').textContent = studentFacultyRatio;
+      document.getElementById('kpi-at-risk-count').textContent = Fmt.num(atRiskCount);
+      document.getElementById('kpi-avg-satisfaction').textContent = avgSatisfaction + ' / 5.0';
+      document.getElementById('kpi-internship-rate').textContent = Fmt.pct(avgInternship, 0);
+      document.getElementById('kpi-total-employers').textContent = Fmt.num(employersCount);
+    }
+
+    // ============================================================
+    // AUTOMATIC SMART INSIGHTS
+    // ============================================================
+    function renderSmartInsights() {
+      const k = DB.kpis || {};
+      const topProg = (DB.alumniPlacement || [])[0] || {};
+      const topIndustry = (DB.alumniIndustry || [])[0] || {};
+      const atRiskCount = (DB.atRisk || []).length;
+      const topGap = (DB.marketGaps || [])[0] || {};
+      const bestDept = (DB.departments || []).slice().sort((a,b) => (b.satisfaction_score||0) - (a.satisfaction_score||0))[0] || {};
+
+      const insights = [
+        `🎓 Graduation Rate stands at <b>${Fmt.pct(k.graduation_rate_pct, 1)}</b> with an average degree tenure of <b>${Fmt.num(k.avg_years_to_graduate, 1)} years</b>`,
+        topProg.program ? `💼 <b>${topProg.program}</b> leads alumni remuneration with average starting salary of <b>${Fmt.curr(topProg.avg_salary_k)}</b>` : null,
+        atRiskCount > 0 ? `⚠️ Early Warning: <b>${atRiskCount} students</b> currently exhibit academic/attendance warning indicators` : null,
+        topIndustry.industry ? `🏢 <b>${topIndustry.industry}</b> is the largest hiring sector employing <b>${Fmt.num(topIndustry.alumni)}</b> alumni` : null,
+        bestDept.name ? `⭐ <b>${bestDept.name}</b> holds the highest student satisfaction score at <b>${bestDept.satisfaction_score} / 5.0</b>` : null,
+        topGap.skill_area ? `📈 High market demand detected in <b>${topGap.skill_area}</b> (Score: ${topGap.demand_score}/100)` : null
+      ].filter(Boolean);
+
+      const container = document.getElementById('smart-insights-list');
+      container.innerHTML = insights.map(i => `
+        <div class="text-xs bg-white/15 px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
+          <span>${i}</span>
+        </div>
+      `).join('');
+    }
+
+    // ============================================================
+    // CHART CREATION & HELPERS
+    // ============================================================
+    function getChartTheme() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      return {
+        text: isDark ? '#9ca3af' : '#64748b',
+        border: isDark ? '#1f2937' : '#e2e8f0',
+        cardBg: isDark ? '#111827' : '#ffffff'
+      };
+    }
+
+    function createOrUpdateChart(id, config) {
+      if (CHARTS[id]) {
+        CHARTS[id].destroy();
+      }
+      const ctx = document.getElementById(id);
+      if (!ctx) return;
+      CHARTS[id] = new Chart(ctx, config);
+    }
+
+    // ============================================================
+    // TAB 1: OVERVIEW CHARTS & FUNNEL
+    // ============================================================
+    function renderOverviewCharts() {
+      const theme = getChartTheme();
+
+      // 1. Admission Funnel
+      const funnel = DB.funnel || [];
+      const funnelContainer = document.getElementById('funnel-container');
+      if (funnel.length) {
+        const maxStage = Math.max(...funnel.map(f => f.total), 1);
+        const funnelColors = ['#6366f1', '#06b6d4', '#10b981', '#f59e0b'];
+
+        funnelContainer.innerHTML = funnel.map((f, i) => {
+          const pct = ((f.total / maxStage) * 100).toFixed(1);
+          return `
+            <div>
+              <div class="flex items-center justify-between text-xs mb-1">
+                <span class="font-medium text-[var(--text-main)]">${f.stage}</span>
+                <span class="font-bold text-[var(--text-main)]">${Fmt.num(f.total)} <span class="text-[10px] text-[var(--text-muted)] font-normal">(${pct}%)</span></span>
+              </div>
+              <div class="w-full bg-[var(--card-border)]/60 rounded-full h-2.5 overflow-hidden">
+                <div class="h-2.5 rounded-full transition-all duration-700" style="width: ${pct}%; background-color: ${funnelColors[i % funnelColors.length]}"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        const applied = (funnel.find(f => f.stage.toLowerCase() === 'applied') || {}).total || 1;
+        const enrolled = (funnel.find(f => f.stage.toLowerCase() === 'enrolled') || {}).total || 0;
+        document.getElementById('funnel-yield').textContent = ((enrolled / applied) * 100).toFixed(1) + '%';
+        document.getElementById('funnel-total').textContent = Fmt.num(applied) + ' Applicants';
+      }
+
+      // 2. 5-Year Status Trend
+      const trend = DB.statusTrend || [];
+      createOrUpdateChart('chart-status-trend', {
+        type: 'line',
+        data: {
+          labels: trend.map(t => 'CY ' + t.year),
+          datasets: [
+            {
+              label: 'Active Students',
+              data: trend.map(t => t.active_students),
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              tension: 0.35,
+              fill: true,
+              pointRadius: 4
+            },
+            {
+              label: 'Non-Active Students',
+              data: trend.map(t => t.non_active_students),
+              borderColor: '#ef4444',
+              backgroundColor: 'rgba(239, 68, 68, 0.08)',
+              tension: 0.35,
+              fill: true,
+              pointRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: theme.border }, ticks: { color: theme.text, font: { size: 11 } } },
+            y: { grid: { color: theme.border }, ticks: { color: theme.text, font: { size: 11 } } }
+          }
+        }
+      });
+
+      // 3. Geographic (Province) Bar
+      const geo = DB.geoDist || [];
+      createOrUpdateChart('chart-geo', {
+        type: 'bar',
+        data: {
+          labels: geo.map(g => g.province || 'Unknown'),
+          datasets: [{
+            data: geo.map(g => g.students),
+            backgroundColor: PALETTE,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: theme.border }, ticks: { color: theme.text } },
+            y: { grid: { display: false }, ticks: { color: theme.text } }
+          }
+        }
+      });
+
+      // 4. Scholarship Split Donut
+      const sch = DB.scholarship || [];
+      createOrUpdateChart('chart-scholarship', {
+        type: 'doughnut',
+        data: {
+          labels: sch.map(s => s.funding),
+          datasets: [{
+            data: sch.map(s => s.students),
+            backgroundColor: ['#6366f1', '#f59e0b', '#10b981'],
+            borderWidth: 2,
+            borderColor: theme.cardBg
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '68%',
+          plugins: {
+            legend: { position: 'bottom', labels: { color: theme.text, boxWidth: 12, font: { size: 11 } } }
+          }
+        }
+      });
+
+      // 5. Market Gaps List
+      const gaps = DB.marketGaps || [];
+      const gapsContainer = document.getElementById('market-gaps-list');
+      if (gaps.length) {
+        gapsContainer.innerHTML = gaps.map(g => `
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="font-medium text-[var(--text-main)]">${g.skill_area}</span>
+              <span class="font-bold text-indigo-600 dark:text-indigo-400 font-mono">${g.demand_score}/100</span>
+            </div>
+            <div class="w-full bg-[var(--card-border)]/60 rounded-full h-1.5 overflow-hidden">
+              <div class="h-1.5 rounded-full ${g.demand_score >= 80 ? 'bg-rose-500' : g.demand_score >= 70 ? 'bg-amber-500' : 'bg-indigo-500'}" style="width: ${g.demand_score}%"></div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // ============================================================
+    // TAB 2: DEPARTMENT INSIGHTS
+    // ============================================================
+    function renderDepartmentTab() {
+      const theme = getChartTheme();
+      const depts = DB.departments || [];
+
+      // Render Department Cards
+      const grid = document.getElementById('dept-cards-grid');
+      grid.innerHTML = depts.map(d => {
+        const ratio = d.faculty_count ? (d.enrolled_students / d.faculty_count).toFixed(1) : '—';
+        return `
+          <div class="glass-card p-4 space-y-3 border-t-4 border-t-indigo-500">
+            <div class="flex items-center justify-between">
+              <h4 class="font-bold text-base text-[var(--text-main)]">${d.name}</h4>
+              <span class="text-xs px-2 py-0.5 rounded-full font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">Active</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-xs pt-1">
+              <div class="p-2 rounded-lg bg-[var(--card-border)]/30">
+                <span class="text-[10px] text-[var(--text-muted)] uppercase block">Faculty</span>
+                <span class="text-sm font-bold text-[var(--text-main)]">${Fmt.num(d.faculty_count)}</span>
+              </div>
+              <div class="p-2 rounded-lg bg-[var(--card-border)]/30">
+                <span class="text-[10px] text-[var(--text-muted)] uppercase block">Enrolled Students</span>
+                <span class="text-sm font-bold text-[var(--text-main)]">${Fmt.num(d.enrolled_students)}</span>
+              </div>
+              <div class="p-2 rounded-lg bg-[var(--card-border)]/30">
+                <span class="text-[10px] text-[var(--text-muted)] uppercase block">Ratio</span>
+                <span class="text-sm font-bold text-indigo-600 dark:text-indigo-400">${ratio} : 1</span>
+              </div>
+              <div class="p-2 rounded-lg bg-[var(--card-border)]/30">
+                <span class="text-[10px] text-[var(--text-muted)] uppercase block">Satisfaction</span>
+                <span class="text-sm font-bold text-amber-500">⭐ ${d.satisfaction_score}</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between text-xs pt-1 border-t border-[var(--card-border)] text-[var(--text-muted)]">
+              <span>Internship Placement:</span>
+              <span class="font-bold text-[var(--text-main)]">${d.internship_rate_pct}%</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Department Student-Faculty Ratio Bar
+      createOrUpdateChart('chart-dept-ratio', {
+        type: 'bar',
+        data: {
+          labels: depts.map(d => d.name),
+          datasets: [{
+            label: 'Students per Faculty',
+            data: depts.map(d => d.faculty_count ? Number((d.enrolled_students / d.faculty_count).toFixed(1)) : 0),
+            backgroundColor: '#6366f1',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: theme.text } },
+            y: { grid: { color: theme.border }, ticks: { color: theme.text } }
+          }
+        }
+      });
+
+      // Satisfaction & Internship Grouped Bar
+      createOrUpdateChart('chart-dept-satisfaction', {
+        type: 'bar',
+        data: {
+          labels: depts.map(d => d.name),
+          datasets: [
+            {
+              label: 'Satisfaction (out of 5)',
+              data: depts.map(d => d.satisfaction_score),
+              backgroundColor: '#f59e0b',
+              borderRadius: 6,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Internship Rate %',
+              data: depts.map(d => d.internship_rate_pct),
+              backgroundColor: '#10b981',
+              borderRadius: 6,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { color: theme.text, boxWidth: 12 } } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: theme.text } },
+            y: { type: 'linear', position: 'left', min: 0, max: 5, grid: { color: theme.border }, ticks: { color: theme.text } },
+            y1: { type: 'linear', position: 'right', min: 0, max: 100, grid: { display: false }, ticks: { callback: v => v + '%', color: theme.text } }
+          }
+        }
+      });
+
+      // Render Programs Directory Table
+      renderProgramsDirectoryTable();
+    }
+
+    function renderProgramsDirectoryTable() {
+      const progs = DB.programs || [];
+      const depts = DB.departments || [];
+      const deptMap = Object.fromEntries(depts.map(d => [d.id, d.name]));
+      const tbody = document.getElementById('programs-directory-tbody');
+
+      const q = (document.getElementById('prog-table-search')?.value || '').toLowerCase();
+      const filtered = progs.filter(p => {
+        const dName = (deptMap[p.department_id] || '').toLowerCase();
+        return !q || p.name.toLowerCase().includes(q) || dName.includes(q);
+      });
+
+      if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-xs text-[var(--text-muted)]">No programs found matching search criteria</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(p => `
+        <tr class="hover:bg-[var(--card-border)]/20 transition">
+          <td class="p-3 font-semibold text-[var(--text-main)]">${p.name}</td>
+          <td class="p-3 text-[var(--text-muted)]">${deptMap[p.department_id] || '—'}</td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 rounded text-[10px] font-medium ${p.level === 'BS' ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300' : p.level === 'MS' ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'}">${p.level}</span>
+          </td>
+          <td class="p-3 text-[var(--text-muted)]">${p.duration_years} Years</td>
+          <td class="p-3 font-mono font-medium">${Fmt.num(p.seats)}</td>
+          <td class="p-3 text-emerald-600 dark:text-emerald-400 font-mono font-semibold">${p.avg_starting_salary_k ? Fmt.curr(p.avg_starting_salary_k) : '—'}</td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-medium ${p.is_open ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'}">
+              ${p.is_open ? 'Admissions Open' : 'Closed'}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function filterProgramsDirectory() {
+      renderProgramsDirectoryTable();
+    }
+
+    // ============================================================
+    // TAB 3: STUDENT ANALYTICS
+    // ============================================================
+    function renderStudentTab() {
+      const theme = getChartTheme();
+
+      // 1. Status Donut
+      const statusData = DB.statusSummary || [];
+      createOrUpdateChart('chart-status-donut', {
+        type: 'doughnut',
+        data: {
+          labels: statusData.map(s => s.status),
+          datasets: [{
+            data: statusData.map(s => s.students),
+            backgroundColor: ['#10b981', '#3b82f6', '#ef4444', '#f59e0b', '#8b5cf6'],
+            borderWidth: 2,
+            borderColor: theme.cardBg
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '65%',
+          plugins: { legend: { position: 'bottom', labels: { color: theme.text, boxWidth: 12, font: { size: 11 } } } }
+        }
+      });
+
+      // 2. Retention by Study Year
+      const retention = DB.retention || [];
+      createOrUpdateChart('chart-retention', {
+        type: 'bar',
+        data: {
+          labels: retention.map(r => 'Year ' + r.year_of_study),
+          datasets: [{
+            data: retention.map(r => r.retention_pct),
+            backgroundColor: '#06b6d4',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: theme.text } },
+            y: { min: 0, max: 100, grid: { color: theme.border }, ticks: { callback: v => v + '%', color: theme.text } }
+          }
+        }
+      });
+
+      // 3. Dropout Reasons
+      const dropouts = DB.leaveReasons || [];
+      createOrUpdateChart('chart-dropout-reasons', {
+        type: 'bar',
+        data: {
+          labels: dropouts.map(d => d.leave_reason || 'Unknown'),
+          datasets: [{
+            data: dropouts.map(d => d.students),
+            backgroundColor: '#f59e0b',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: theme.border }, ticks: { color: theme.text } },
+            y: { grid: { display: false }, ticks: { color: theme.text, font: { size: 11 } } }
+          }
+        }
+      });
+
+      // 4. CGPA by Program
+      const cgpaData = DB.cgpa || [];
+      createOrUpdateChart('chart-cgpa', {
+        type: 'bar',
+        data: {
+          labels: cgpaData.map(c => c.program),
+          datasets: [
+            {
+              label: 'Average CGPA',
+              data: cgpaData.map(c => Number(c.avg_cgpa)),
+              backgroundColor: cgpaData.map(c => Number(c.avg_cgpa) < 2.5 ? '#ef4444' : '#6366f1'),
+              borderRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { maxRotation: 45, color: theme.text, font: { size: 10 } }, grid: { display: false } },
+            y: { min: 0, max: 4.0, grid: { color: theme.border }, ticks: { color: theme.text } }
+          }
+        }
+      });
+
+      // 5. Gender by Program Grouped Bar
+      const genderData = DB.genderProg || [];
+      createOrUpdateChart('chart-gender-prog', {
+        type: 'bar',
+        data: {
+          labels: genderData.map(g => g.program),
+          datasets: [
+            { label: 'Female', data: genderData.map(g => g.female || 0), backgroundColor: '#ec4899', borderRadius: 4 },
+            { label: 'Male', data: genderData.map(g => g.male || 0), backgroundColor: '#3b82f6', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { color: theme.text, boxWidth: 12 } } },
+          scales: {
+            x: { ticks: { maxRotation: 45, color: theme.text, font: { size: 10 } }, grid: { display: false } },
+            y: { grid: { color: theme.border }, ticks: { color: theme.text } }
+          }
+        }
+      });
+
+      // 6. Early Warning At-Risk Table
+      renderAtRiskTable();
+    }
+
+    function renderAtRiskTable() {
+      const atRisk = DB.atRisk || [];
+      const q = (document.getElementById('risk-search-input')?.value || '').toLowerCase();
+      const tbody = document.getElementById('risk-table-tbody');
+
+      const filtered = atRisk.filter(r => {
+        return !q || String(r.student_id).includes(q) || (r.program || '').toLowerCase().includes(q);
+      });
+
+      if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-xs text-[var(--text-muted)]">No at-risk students match search query</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(r => `
+        <tr class="hover:bg-rose-50/30 dark:hover:bg-rose-950/20 transition">
+          <td class="p-3 font-mono font-bold text-rose-600 dark:text-rose-400">#${r.student_id}</td>
+          <td class="p-3 font-medium text-[var(--text-main)]">${r.program}</td>
+          <td class="p-3 text-[var(--text-muted)]">${r.intake_year}</td>
+          <td class="p-3 font-mono font-bold ${Number(r.cgpa) < 2.0 ? 'text-rose-600' : 'text-amber-500'}">${Fmt.num(r.cgpa, 2)}</td>
+          <td class="p-3 font-mono ${Number(r.attendance_pct) < 75 ? 'text-rose-600 font-semibold' : ''}">${Fmt.pct(r.attendance_pct, 1)}</td>
+          <td class="p-3">
+            ${r.fees_unpaid ? '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">Unpaid</span>' : '<span class="text-emerald-500">Paid</span>'}
+          </td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">${r.warning_signs || 'Academic Probation'}</span>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function filterAtRiskStudents() {
+      renderAtRiskTable();
+    }
+
+    // ============================================================
+    // TAB 4: ALUMNI RECORDS & PLACEMENT
+    // ============================================================
+    function renderAlumniTab() {
+      const theme = getChartTheme();
+
+      // 1. Top Employers Table
+      const employers = DB.alumniTopEmployers || [];
+      const empTbody = document.getElementById('alumni-top-employers-tbody');
+      empTbody.innerHTML = employers.map(e => `
+        <tr class="hover:bg-[var(--card-border)]/20 transition">
+          <td class="p-3 font-semibold text-[var(--text-main)]">${e.employer}</td>
+          <td class="p-3 text-[var(--text-muted)]">${e.type}</td>
+          <td class="p-3 text-[var(--text-muted)]">${e.industry}</td>
+          <td class="p-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">${Fmt.num(e.alumni)}</td>
+          <td class="p-3">
+            ${e.reputable ? '<span class="text-xs text-amber-500 font-semibold">⭐ Reputable</span>' : '<span class="text-xs text-[var(--text-muted)]">Verified</span>'}
+          </td>
+        </tr>
+      `).join('');
+
+      // 2. Program Placement Table
+      const placements = DB.alumniPlacement || [];
+      const plcTbody = document.getElementById('alumni-placement-tbody');
+      plcTbody.innerHTML = placements.map(p => `
+        <tr class="hover:bg-[var(--card-border)]/20 transition">
+          <td class="p-3 font-semibold text-[var(--text-main)]">${p.program}</td>
+          <td class="p-3 font-mono text-[var(--text-muted)]">${Fmt.num(p.alumni)}</td>
+          <td class="p-3">
+            <div class="flex items-center gap-2">
+              <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">${Fmt.pct(p.placement_pct, 1)}</span>
+              <div class="w-16 bg-[var(--card-border)]/60 rounded-full h-1.5 overflow-hidden">
+                <div class="h-1.5 rounded-full bg-emerald-500" style="width: ${Math.min(100, p.placement_pct)}%"></div>
+              </div>
+            </div>
+          </td>
+          <td class="p-3 font-mono text-[var(--text-main)]">${Fmt.curr(p.avg_salary_k)}/mo</td>
+        </tr>
+      `).join('');
+
+      // 3. Alumni Industry Chart (Polar Area)
+      const ind = DB.alumniIndustry || [];
+      createOrUpdateChart('chart-alumni-industry', {
+        type: 'polarArea',
+        data: {
+          labels: ind.map(i => i.industry),
+          datasets: [{
+            data: ind.map(i => i.alumni),
+            backgroundColor: PALETTE.map(c => c + 'cc')
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { color: theme.text, boxWidth: 10, font: { size: 10 } } } }
+        }
+      });
+
+      // 4. Employer Organization Type Donut
+      const empType = DB.alumniEmployerType || [];
+      createOrUpdateChart('chart-employer-type', {
+        type: 'doughnut',
+        data: {
+          labels: empType.map(t => t.type),
+          datasets: [{
+            data: empType.map(t => t.alumni),
+            backgroundColor: PALETTE,
+            borderWidth: 2,
+            borderColor: theme.cardBg
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '60%',
+          plugins: { legend: { position: 'bottom', labels: { color: theme.text, boxWidth: 10, font: { size: 10 } } } }
+        }
+      });
+
+      // 5. Destination Location Donut
+      const loc = DB.alumniLocation || [];
+      createOrUpdateChart('chart-alumni-location', {
+        type: 'doughnut',
+        data: {
+          labels: loc.map(l => l.category),
+          datasets: [{
+            data: loc.map(l => l.alumni),
+            backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#06b6d4'],
+            borderWidth: 2,
+            borderColor: theme.cardBg
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '60%',
+          plugins: { legend: { position: 'bottom', labels: { color: theme.text, boxWidth: 10, font: { size: 10 } } } }
+        }
+      });
+    }
+
+    // ============================================================
+    // TAB 5: LIVE RAW RECORDS EXPLORER
+    // ============================================================
+    function renderExplorerTab() {
+      const depts = DB.departments || [];
+      const students = DB.students || [];
+      const alumni = DB.alumni || [];
+
+      document.getElementById('exp-count-dept').textContent = depts.length;
+      document.getElementById('exp-count-students').textContent = students.length;
+      document.getElementById('exp-count-alumni').textContent = alumni.length;
+
+      renderExplorerActiveView();
+    }
+
+    function switchExplorerEntity(entity) {
+      explorerState.entity = entity;
+      explorerState.page = 1;
+      explorerState.search = '';
+      document.getElementById('explorer-search').value = '';
+
+      ['departments', 'students', 'alumni'].forEach(e => {
+        const btn = document.getElementById('exp-btn-' + e);
+        if (e === entity) {
+          btn.className = "px-3 py-1.5 rounded-lg bg-[var(--card-bg)] shadow-sm font-semibold text-[var(--primary)]";
+        } else {
+          btn.className = "px-3 py-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)]";
+        }
+      });
+
+      renderExplorerActiveView();
+    }
+
+    function renderExplorerActiveView() {
+      const thead = document.getElementById('explorer-thead');
+      const tbody = document.getElementById('explorer-tbody');
+      const q = explorerState.search.toLowerCase();
+
+      let data = [];
+      let columns = [];
+
+      if (explorerState.entity === 'departments') {
+        columns = ['ID', 'Department Name', 'Faculty Count', 'Enrolled Students', 'Students / Faculty', 'Satisfaction', 'Internship %'];
+        data = (DB.departments || []).filter(d => !q || d.name.toLowerCase().includes(q));
+      } else if (explorerState.entity === 'students') {
+        columns = ['ID', 'Program', 'Intake Year', 'Gender', 'Status', 'CGPA', 'Attendance %', 'Fees Unpaid', 'Scholarship', 'Province'];
+        data = (DB.students || []).filter(s => {
+          const pName = (s.programs?.name || '').toLowerCase();
+          return !q || String(s.id).includes(q) || pName.includes(q) || (s.province || '').toLowerCase().includes(q) || (s.status || '').toLowerCase().includes(q);
+        });
+      } else if (explorerState.entity === 'alumni') {
+        columns = ['ID', 'Program', 'Grad Year', 'Gender', 'Outcome', 'Employer', 'Location', 'Starting Salary'];
+        data = (DB.alumni || []).filter(a => {
+          const pName = (a.programs?.name || '').toLowerCase();
+          const eName = (a.employers?.name || '').toLowerCase();
+          return !q || String(a.id).includes(q) || pName.includes(q) || eName.includes(q) || (a.work_location || '').toLowerCase().includes(q);
+        });
+      }
+
+      // Pagination
+      const total = data.length;
+      const totalPages = Math.max(1, Math.ceil(total / explorerState.pageSize));
+      if (explorerState.page > totalPages) explorerState.page = totalPages;
+
+      document.getElementById('explorer-match-count').textContent = `Showing ${Math.min(total, (explorerState.page - 1) * explorerState.pageSize + 1)}-${Math.min(total, explorerState.page * explorerState.pageSize)} of ${total} records`;
+      document.getElementById('exp-page-indicator').textContent = `Page ${explorerState.page} of ${totalPages}`;
+      document.getElementById('exp-prev-btn').disabled = explorerState.page <= 1;
+      document.getElementById('exp-next-btn').disabled = explorerState.page >= totalPages;
+
+      const pageSlice = data.slice((explorerState.page - 1) * explorerState.pageSize, explorerState.page * explorerState.pageSize);
+
+      // Render Headers
+      thead.innerHTML = `<tr>${columns.map(c => `<th class="p-3">${c}</th>`).join('')}</tr>`;
+
+      // Render Rows
+      if (!pageSlice.length) {
+        tbody.innerHTML = `<tr><td colspan="${columns.length}" class="p-8 text-center text-xs text-[var(--text-muted)]">No matching records found in database</td></tr>`;
+        return;
+      }
+
+      if (explorerState.entity === 'departments') {
+        tbody.innerHTML = pageSlice.map(d => {
+          const ratio = d.faculty_count ? (d.enrolled_students / d.faculty_count).toFixed(1) : '—';
+          return `
+            <tr class="hover:bg-[var(--card-border)]/20 transition">
+              <td class="p-3 font-mono font-medium">${d.id}</td>
+              <td class="p-3 font-semibold text-[var(--text-main)]">${d.name}</td>
+              <td class="p-3 font-mono">${Fmt.num(d.faculty_count)}</td>
+              <td class="p-3 font-mono">${Fmt.num(d.enrolled_students)}</td>
+              <td class="p-3 font-mono text-indigo-600 dark:text-indigo-400 font-semibold">${ratio} : 1</td>
+              <td class="p-3 text-amber-500 font-semibold">⭐ ${d.satisfaction_score}</td>
+              <td class="p-3 font-mono">${d.internship_rate_pct}%</td>
+            </tr>
+          `;
+        }).join('');
+      } else if (explorerState.entity === 'students') {
+        tbody.innerHTML = pageSlice.map(s => `
+          <tr class="hover:bg-[var(--card-border)]/20 transition">
+            <td class="p-3 font-mono text-indigo-600 dark:text-indigo-400 font-semibold">#${s.id}</td>
+            <td class="p-3 font-medium text-[var(--text-main)]">${s.programs?.name || ('Program #' + s.program_id)}</td>
+            <td class="p-3 text-[var(--text-muted)]">${s.intake_year}</td>
+            <td class="p-3">${s.gender}</td>
+            <td class="p-3">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-medium ${s.status === 'Active' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : s.status === 'Graduated' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300' : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'}">
+                ${s.status}
+              </span>
+            </td>
+            <td class="p-3 font-mono font-bold ${Number(s.cgpa) < 2.5 ? 'text-rose-600' : ''}">${Fmt.num(s.cgpa, 2)}</td>
+            <td class="p-3 font-mono">${Fmt.pct(s.attendance_pct, 1)}</td>
+            <td class="p-3">${s.fees_unpaid ? '<span class="text-rose-600 font-bold">Yes</span>' : '<span class="text-emerald-600">No</span>'}</td>
+            <td class="p-3">${s.has_scholarship ? '<span class="text-indigo-600 font-medium">Scholarship</span>' : 'Self-Financed'}</td>
+            <td class="p-3 text-[var(--text-muted)]">${s.province || '—'}</td>
+          </tr>
+        `).join('');
+      } else if (explorerState.entity === 'alumni') {
+        tbody.innerHTML = pageSlice.map(a => `
+          <tr class="hover:bg-[var(--card-border)]/20 transition">
+            <td class="p-3 font-mono text-indigo-600 dark:text-indigo-400 font-semibold">#${a.id}</td>
+            <td class="p-3 font-medium text-[var(--text-main)]">${a.programs?.name || ('Program #' + a.program_id)}</td>
+            <td class="p-3 text-[var(--text-muted)]">${a.graduation_year}</td>
+            <td class="p-3">${a.gender}</td>
+            <td class="p-3">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-medium ${a.outcome === 'Employed' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'}">
+                ${a.outcome}
+              </span>
+            </td>
+            <td class="p-3 font-semibold text-[var(--text-main)]">${a.employers?.name || '—'}</td>
+            <td class="p-3 text-[var(--text-muted)]">${a.work_location || 'Local'}</td>
+            <td class="p-3 font-mono text-emerald-600 dark:text-emerald-400 font-semibold">${a.starting_salary_k ? Fmt.curr(a.starting_salary_k) : '—'}</td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    function onExplorerSearch() {
+      explorerState.search = document.getElementById('explorer-search').value;
+      explorerState.page = 1;
+      renderExplorerActiveView();
+    }
+    function explorerPrevPage() {
+      if (explorerState.page > 1) {
+        explorerState.page--;
+        renderExplorerActiveView();
+      }
+    }
+    function explorerNextPage() {
+      explorerState.page++;
+      renderExplorerActiveView();
+    }
+
+    // ============================================================
+    // FILTER CONTROLS & DYNAMIC POPULATION
+    // ============================================================
+    function populateFilterOptions() {
+      const yearSelect = document.getElementById('filter-year');
+      const deptSelect = document.getElementById('filter-dept');
+      const progSelect = document.getElementById('filter-program');
+
+      // Populate Years from status trend
+      const years = [...new Set((DB.statusTrend || []).map(t => t.year))].sort();
+      yearSelect.innerHTML = '<option value="">All Years</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+
+      // Populate Departments
+      const depts = (DB.departments || []).map(d => d.name).sort();
+      deptSelect.innerHTML = '<option value="">All Departments</option>' + depts.map(d => `<option value="${d}">${d}</option>`).join('');
+
+      // Populate Programs
+      const progs = (DB.programs || []).map(p => p.name).sort();
+      progSelect.innerHTML = '<option value="">All Programs</option>' + progs.map(p => `<option value="${p}">${p}</option>`).join('');
+    }
+
+    function onFilterChange() {
+      const y = document.getElementById('filter-year').value;
+      const d = document.getElementById('filter-dept').value;
+      const p = document.getElementById('filter-program').value;
+      const l = document.getElementById('filter-level').value;
+      const g = document.getElementById('filter-gender').value;
+      const s = document.getElementById('filter-status').value;
+
+      const activeCount = [y, d, p, l, g, s].filter(Boolean).length;
+      const badge = document.getElementById('filter-applied-count');
+      if (activeCount > 0) {
+        badge.classList.remove('hidden');
+        badge.textContent = activeCount + ' active';
+      } else {
+        badge.classList.add('hidden');
+      }
+
+      // Re-render components with filters applied
+      renderProgramsDirectoryTable();
+      renderAtRiskTable();
+      renderExplorerActiveView();
+    }
+
+    function resetAllFilters() {
+      ['filter-year', 'filter-dept', 'filter-program', 'filter-level', 'filter-gender', 'filter-status'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      onFilterChange();
+    }
+
+    // ============================================================
+    // TAB NAVIGATION
+    // ============================================================
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+      const target = document.getElementById(tabId);
+      if (target) target.classList.remove('hidden');
+
+      const activeBtn = document.getElementById('btn-' + tabId);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      // Trigger chart resize
+      window.dispatchEvent(new Event('resize'));
+    }
+
+    // ============================================================
+    // THEME TOGGLE
+    // ============================================================
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.getAttribute('data-theme') === 'dark';
+      html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+      document.getElementById('theme-icon').textContent = isDark ? '🌙' : '☀️';
+
+      // Redraw charts with new theme colors
+      setTimeout(() => {
+        renderOverviewCharts();
+        renderDepartmentTab();
+        renderStudentTab();
+        renderAlumniTab();
+      }, 50);
+    }
+
+    // ============================================================
+    // CSV EXPORT FUNCTION
+    // ============================================================
+    function exportCurrentData() {
+      let dataToExport = [];
+      let filename = "apex_university_report.csv";
+
+      if (explorerState.entity === 'departments') {
+        filename = "departments_report.csv";
+        dataToExport = DB.departments || [];
+      } else if (explorerState.entity === 'students') {
+        filename = "students_roster.csv";
+        dataToExport = (DB.students || []).map(s => ({
+          ID: s.id,
+          Program: s.programs?.name || s.program_id,
+          Intake: s.intake_year,
+          Gender: s.gender,
+          Status: s.status,
+          CGPA: s.cgpa,
+          Attendance_pct: s.attendance_pct,
+          Fees_Unpaid: s.fees_unpaid ? 'Yes' : 'No',
+          Scholarship: s.has_scholarship ? 'Yes' : 'No',
+          Province: s.province
+        }));
+      } else if (explorerState.entity === 'alumni') {
+        filename = "alumni_records.csv";
+        dataToExport = (DB.alumni || []).map(a => ({
+          ID: a.id,
+          Program: a.programs?.name || a.program_id,
+          Graduation_Year: a.graduation_year,
+          Gender: a.gender,
+          Outcome: a.outcome,
+          Employer: a.employers?.name || '',
+          Location: a.work_location,
+          Starting_Salary_k: a.starting_salary_k
+        }));
+      }
+
+      if (!dataToExport.length) return alert('No data to export.');
+
+      const headers = Object.keys(dataToExport[0]);
+      let csvContent = headers.join(',') + '\n';
+      dataToExport.forEach(row => {
+        csvContent += headers.map(h => `"${String(row[h] || '').replace(/"/g, '""')}"`).join(',') + '\n';
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // ============================================================
+    // APPLICATION INITIALIZATION
+    // ============================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      fetchAllData();
+    });
+  </script>
 </body>
 </html>
